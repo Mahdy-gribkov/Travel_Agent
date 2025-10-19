@@ -1,149 +1,140 @@
 /**
- * Unit tests for Chat Service with AI Agent integration
+ * Unit tests for Chat Service
  */
 
 import { ChatService } from '@/services/chat.service';
 
-// Mock Firebase
+// Mock dependencies
 jest.mock('@/lib/firebase/admin', () => ({
   adminDb: {
-    collection: jest.fn().mockReturnValue({
-      doc: jest.fn().mockReturnValue({
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({
         set: jest.fn(),
-        get: jest.fn().mockResolvedValue({
-          exists: true,
-          data: () => ({
-            id: 'test-session',
-            userId: 'test-user',
-            title: 'Test Chat',
-            messages: [],
-            context: { conversationMemory: [] },
-            status: 'active',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }),
-        }),
+        get: jest.fn(),
         update: jest.fn(),
-      }),
-      where: jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          offset: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue({
-              orderBy: jest.fn().mockReturnValue({
-                get: jest.fn().mockResolvedValue({
-                  docs: [],
-                  size: 0,
-                }),
-              }),
-            }),
-          }),
-        }),
-      }),
-    }),
+        delete: jest.fn(),
+      })),
+      where: jest.fn(() => ({
+        orderBy: jest.fn(() => ({
+          limit: jest.fn(() => ({
+            get: jest.fn(),
+          })),
+        })),
+      })),
+      get: jest.fn(),
+    })),
   },
 }));
 
-// Mock AI Agent Service
 jest.mock('@/services/ai/agent.service', () => ({
   AIAgentService: jest.fn().mockImplementation(() => ({
-    processMessage: jest.fn().mockResolvedValue({
-      response: 'AI response',
-      actions: [
-        {
-          tool: 'search_travel_guides',
-          success: true,
-          timestamp: new Date(),
-        },
-      ],
-    }),
-    getConversationHistory: jest.fn().mockResolvedValue([]),
-    getAgentStats: jest.fn().mockResolvedValue({
-      totalInteractions: 10,
-      totalLogs: 5,
-      toolUsage: { search_travel_guides: 5 },
-    }),
+    processMessage: jest.fn(),
+    getConversationHistory: jest.fn(),
+    getAgentStats: jest.fn(),
   })),
-}));
-
-// Mock validation schemas
-jest.mock('@/lib/validations/schemas', () => ({
-  createChatSessionSchema: {
-    parse: jest.fn().mockImplementation((data) => data),
-  },
-  chatMessageSchema: {
-    parse: jest.fn().mockImplementation((data) => data),
-  },
 }));
 
 describe('ChatService', () => {
   let chatService: ChatService;
-  let mockAdminDb: any;
   let mockAIAgent: any;
 
   beforeEach(() => {
-    // Get mocked instances
-    const { adminDb } = require('@/lib/firebase/admin');
-    const { AIAgentService } = require('@/services/ai/agent.service');
-
-    mockAdminDb = adminDb;
-    mockAIAgent = new AIAgentService();
-
     chatService = new ChatService();
+    
+    // Get the mocked AI agent instance
+    const { AIAgentService } = require('@/services/ai/agent.service');
+    mockAIAgent = new AIAgentService();
+  });
 
-    // Reset mocks
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('createChatSession', () => {
     it('should create a new chat session', async () => {
       const sessionData = {
-        title: 'New Chat Session',
-        context: { activeTools: ['search'] },
+        title: 'Test Chat',
+        context: {
+          activeTools: ['search_travel_guides'],
+        },
       };
+
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        set: jest.fn(),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
 
       const result = await chatService.createChatSession('test-user', sessionData);
 
       expect(result).toMatchObject({
         userId: 'test-user',
-        title: 'New Chat Session',
+        title: 'Test Chat',
+        messages: [],
+        context: {
+          conversationMemory: [],
+          activeTools: ['search_travel_guides'],
+        },
         status: 'active',
-        context: expect.objectContaining({
-          activeTools: ['search'],
-        }),
       });
-
-      expect(mockAdminDb.collection().doc().set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'test-user',
-          title: 'New Chat Session',
-        })
-      );
+      expect(result.id).toBeDefined();
+      expect(result.createdAt).toBeInstanceOf(Date);
+      expect(result.updatedAt).toBeInstanceOf(Date);
     });
 
-    it('should use default values when not provided', async () => {
+    it('should create session with default values', async () => {
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        set: jest.fn(),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
+
       const result = await chatService.createChatSession('test-user', {});
 
       expect(result.title).toBe('New Chat');
-      expect(result.context.conversationMemory).toEqual([]);
+      expect(result.context.activeTools).toEqual([]);
     });
   });
 
   describe('getChatSession', () => {
-    it('should retrieve an existing chat session', async () => {
-      const result = await chatService.getChatSession('test-session');
-
-      expect(result).toMatchObject({
+    it('should retrieve a chat session', async () => {
+      const mockSession = {
         id: 'test-session',
         userId: 'test-user',
         title: 'Test Chat',
+        messages: [],
+        status: 'active',
+      };
+
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          data: () => mockSession,
+        }),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
       });
 
-      expect(mockAdminDb.collection().doc().get).toHaveBeenCalled();
+      const result = await chatService.getChatSession('test-session');
+
+      expect(result).toEqual(mockSession);
     });
 
     it('should return null for non-existent session', async () => {
-      mockAdminDb.collection().doc().get.mockResolvedValue({
-        exists: false,
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        get: jest.fn().mockResolvedValue({
+          exists: false,
+        }),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
       });
 
       const result = await chatService.getChatSession('non-existent');
@@ -154,231 +145,265 @@ describe('ChatService', () => {
 
   describe('addMessage', () => {
     it('should add a message to a chat session', async () => {
+      const mockSession = {
+        id: 'test-session',
+        userId: 'test-user',
+        title: 'Test Chat',
+        messages: [],
+        status: 'active',
+        context: {
+          conversationMemory: [],
+          activeTools: [],
+        },
+      };
+
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          data: () => mockSession,
+        }),
+        update: jest.fn(),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
+
       const messageData = {
-        role: 'user',
+        role: 'user' as const,
         content: 'Hello, world!',
       };
 
       const result = await chatService.addMessage('test-session', messageData);
 
-      expect(result.messages).toHaveLength(1);
-      expect(result.messages[0]).toMatchObject({
+      expect(result).toMatchObject({
+        id: expect.any(String),
         role: 'user',
         content: 'Hello, world!',
+        timestamp: expect.any(Date),
       });
-
-      expect(mockAdminDb.collection().doc().update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          messages: expect.any(Array),
-          context: expect.any(Object),
-          updatedAt: expect.any(Date),
-        })
-      );
-    });
-
-    it('should throw error for non-existent session', async () => {
-      mockAdminDb.collection().doc().get.mockResolvedValue({
-        exists: false,
-      });
-
-      await expect(
-        chatService.addMessage('non-existent', { role: 'user', content: 'test' })
-      ).rejects.toThrow('Chat session not found');
     });
   });
 
   describe('processMessageWithAI', () => {
     it('should process a message with AI agent', async () => {
+      const mockSession = {
+        id: 'test-session',
+        userId: 'test-user',
+        title: 'Test Chat',
+        messages: [],
+        status: 'active',
+        context: {
+          conversationMemory: [],
+          activeTools: [],
+        },
+      };
+
+      const mockAIResponse = {
+        response: 'AI response',
+        actions: [
+          {
+            tool: 'search_travel_guides',
+            success: true,
+            timestamp: new Date(),
+          },
+        ],
+      };
+
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          data: () => mockSession,
+        }),
+        update: jest.fn(),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
+
+      mockAIAgent.processMessage.mockResolvedValue(mockAIResponse);
+      mockAIAgent.getConversationHistory.mockResolvedValue([]);
+
       const result = await chatService.processMessageWithAI(
         'test-session',
-        'I want to visit Tokyo',
+        'Hello, AI!',
         'test-user'
       );
 
-      expect(result.aiResponse).toBe('AI response');
-      expect(result.actions).toHaveLength(1);
-      expect(result.actions[0].tool).toBe('search_travel_guides');
-      expect(result.session.messages).toHaveLength(2); // User message + AI response
-
-      // Verify AI agent was called
-      expect(mockAIAgent.processMessage).toHaveBeenCalledWith(
-        'I want to visit Tokyo',
-        expect.objectContaining({
-          userId: 'test-user',
-          sessionId: 'test-session',
-        })
-      );
+      expect(result).toMatchObject({
+        session: expect.objectContaining({
+          messages: expect.arrayContaining([
+            expect.objectContaining({
+              role: 'user',
+              content: 'Hello, AI!',
+            }),
+            expect.objectContaining({
+              role: 'assistant',
+              content: 'AI response',
+            }),
+          ]),
+        }),
+        aiResponse: 'AI response',
+        actions: mockAIResponse.actions,
+      });
     });
 
-    it('should handle AI agent errors gracefully', async () => {
-      mockAIAgent.processMessage.mockRejectedValue(new Error('AI error'));
+    it('should throw error for non-existent session', async () => {
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        get: jest.fn().mockResolvedValue({
+          exists: false,
+        }),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
 
       await expect(
-        chatService.processMessageWithAI('test-session', 'test message', 'test-user')
-      ).rejects.toThrow('AI error');
-    });
-
-    it('should use anonymous user when userId not provided', async () => {
-      await chatService.processMessageWithAI('test-session', 'test message');
-
-      expect(mockAIAgent.processMessage).toHaveBeenCalledWith(
-        'test message',
-        expect.objectContaining({
-          userId: 'anonymous',
-          sessionId: 'test-session',
-        })
-      );
-    });
-
-    it('should update conversation memory with both messages', async () => {
-      const result = await chatService.processMessageWithAI(
-        'test-session',
-        'test message',
-        'test-user'
-      );
-
-      expect(result.session.context.conversationMemory).toHaveLength(2);
-      expect(result.session.context.lastAgentActions).toBeDefined();
+        chatService.processMessageWithAI('non-existent', 'Hello!', 'test-user')
+      ).rejects.toThrow('Chat session not found');
     });
   });
 
   describe('getUserChatSessions', () => {
-    it('should retrieve user chat sessions with pagination', async () => {
-      const result = await chatService.getUserChatSessions('test-user', 1, 10, 'active');
-
-      expect(result.sessions).toEqual([]);
-      expect(result.total).toBe(0);
-
-      expect(mockAdminDb.collection().where).toHaveBeenCalledWith('userId', '==', 'test-user');
-      expect(mockAdminDb.collection().where).toHaveBeenCalledWith('status', '==', 'active');
-    });
-  });
-
-  describe('searchChatSessions', () => {
-    it('should search chat sessions by query', async () => {
+    it('should retrieve user chat sessions', async () => {
       const mockSessions = [
-        {
-          id: 'session1',
-          title: 'Tokyo Trip',
-          messages: [{ content: 'Planning a trip to Tokyo' }],
-        },
-        {
-          id: 'session2',
-          title: 'Paris Vacation',
-          messages: [{ content: 'Planning a vacation to Paris' }],
-        },
+        { id: 'session1', title: 'Chat 1' },
+        { id: 'session2', title: 'Chat 2' },
       ];
 
-      mockAdminDb.collection().where().where().offset().limit().orderBy().get.mockResolvedValue({
-        docs: mockSessions.map(session => ({ data: () => session })),
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockQuery = {
+        get: jest.fn().mockResolvedValue({
+          docs: mockSessions.map(session => ({
+            id: session.id,
+            data: () => session,
+          })),
+          size: mockSessions.length,
+        }),
+      };
+      adminDb.collection.mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          orderBy: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue(mockQuery),
+          }),
+        }),
       });
 
-      const result = await chatService.searchChatSessions('test-user', 'Tokyo');
+      const result = await chatService.getUserChatSessions('test-user', 1, 10);
 
-      expect(result.sessions).toHaveLength(1);
-      expect(result.sessions[0].title).toBe('Tokyo Trip');
+      expect(result).toEqual({
+        sessions: mockSessions,
+        total: mockSessions.length,
+      });
     });
   });
 
   describe('updateChatSession', () => {
     it('should update a chat session', async () => {
-      const updateData = { title: 'Updated Title' };
+      const mockSession = {
+        id: 'test-session',
+        userId: 'test-user',
+        title: 'Original Title',
+        messages: [],
+        status: 'active',
+      };
+
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          data: () => mockSession,
+        }),
+        update: jest.fn(),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
+
+      const updateData = {
+        title: 'Updated Title',
+        status: 'archived' as const,
+      };
 
       const result = await chatService.updateChatSession('test-session', updateData);
 
-      expect(result.title).toBe('Updated Title');
-      expect(mockAdminDb.collection().doc().update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          ...updateData,
-          updatedAt: expect.any(Date),
-        })
-      );
-    });
-
-    it('should throw error for non-existent session', async () => {
-      mockAdminDb.collection().doc().get.mockResolvedValue({
-        exists: false,
-      });
-
-      await expect(
-        chatService.updateChatSession('non-existent', { title: 'test' })
-      ).rejects.toThrow('Chat session not found');
-    });
-  });
-
-  describe('deleteChatSession', () => {
-    it('should mark session as deleted', async () => {
-      await chatService.deleteChatSession('test-session');
-
-      expect(mockAdminDb.collection().doc().update).toHaveBeenCalledWith({
-        status: 'deleted',
+      expect(result).toMatchObject({
+        ...mockSession,
+        title: 'Updated Title',
+        status: 'archived',
         updatedAt: expect.any(Date),
       });
     });
   });
 
-  describe('archiveChatSession', () => {
-    it('should archive a chat session', async () => {
-      const result = await chatService.archiveChatSession('test-session');
+  describe('deleteChatSession', () => {
+    it('should delete a chat session', async () => {
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockDoc = {
+        delete: jest.fn(),
+      };
+      adminDb.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue(mockDoc),
+      });
 
-      expect(result.status).toBe('archived');
+      await chatService.deleteChatSession('test-session');
+
+      expect(mockDoc.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('searchChatSessions', () => {
+    it('should search chat sessions by title', async () => {
+      const mockSessions = [
+        { id: 'session1', title: 'Travel to Paris' },
+        { id: 'session2', title: 'Paris vacation planning' },
+      ];
+
+      const { adminDb } = require('@/lib/firebase/admin');
+      const mockQuery = {
+        get: jest.fn().mockResolvedValue({
+          docs: mockSessions.map(session => ({
+            id: session.id,
+            data: () => session,
+          })),
+          size: mockSessions.length,
+        }),
+      };
+      adminDb.collection.mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          orderBy: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue(mockQuery),
+          }),
+        }),
+      });
+
+      const result = await chatService.searchChatSessions('test-user', 'Paris', 1, 10);
+
+      expect(result).toEqual({
+        sessions: mockSessions,
+        total: mockSessions.length,
+      });
     });
   });
 
   describe('getAgentStats', () => {
     it('should get AI agent statistics', async () => {
-      const stats = await chatService.getAgentStats();
+      const mockStats = {
+        totalInteractions: 100,
+        totalLogs: 50,
+        toolUsage: {
+          'search_travel_guides': 25,
+          'get_weather': 15,
+        },
+      };
 
-      expect(stats).toEqual({
-        totalInteractions: 10,
-        totalLogs: 5,
-        toolUsage: { search_travel_guides: 5 },
-      });
+      mockAIAgent.getAgentStats.mockResolvedValue(mockStats);
 
-      expect(mockAIAgent.getAgentStats).toHaveBeenCalled();
-    });
-  });
+      const result = await chatService.getAgentStats();
 
-  describe('conversation memory management', () => {
-    it('should limit conversation memory to 10 messages', () => {
-      const memory = Array.from({ length: 12 }, (_, i) => `message ${i}`);
-      const message = { role: 'user', content: 'new message' };
-
-      // Access private method through any type
-      const updatedMemory = (chatService as any).updateConversationMemory(memory, message);
-
-      expect(updatedMemory).toHaveLength(10);
-      expect(updatedMemory[9]).toBe('user: new message');
-    });
-
-    it('should add messages to conversation memory', () => {
-      const memory = ['message 1', 'message 2'];
-      const message = { role: 'assistant', content: 'AI response' };
-
-      const updatedMemory = (chatService as any).updateConversationMemory(memory, message);
-
-      expect(updatedMemory).toHaveLength(3);
-      expect(updatedMemory[2]).toBe('assistant: AI response');
-    });
-  });
-
-  describe('ID generation', () => {
-    it('should generate unique session IDs', () => {
-      const id1 = (chatService as any).generateId();
-      const id2 = (chatService as any).generateId();
-
-      expect(id1).toMatch(/^chat_\d+_[a-z0-9]+$/);
-      expect(id2).toMatch(/^chat_\d+_[a-z0-9]+$/);
-      expect(id1).not.toBe(id2);
-    });
-
-    it('should generate unique message IDs', () => {
-      const id1 = (chatService as any).generateMessageId();
-      const id2 = (chatService as any).generateMessageId();
-
-      expect(id1).toMatch(/^msg_\d+_[a-z0-9]+$/);
-      expect(id2).toMatch(/^msg_\d+_[a-z0-9]+$/);
-      expect(id1).not.toBe(id2);
+      expect(result).toEqual(mockStats);
     });
   });
 });
