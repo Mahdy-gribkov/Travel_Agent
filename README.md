@@ -1,353 +1,333 @@
-# AI Travel Agent
+# vAI Travel Agent
 
-A production-ready AI-powered travel planning application built with Next.js, React, TypeScript, Firebase, and Google Gemini AI.
+An intelligent AI-powered travel planning application built with Next.js 14, TypeScript, Firebase, and advanced AI technologies.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **AI-Powered Itinerary Generation**: Create personalized travel itineraries using Google Gemini AI
-- **Multi-Modal Input Support**: Text, voice, and image inputs for travel planning
-- **Real-Time Data Integration**: Live weather, flight, and accommodation data
-- **Conversational Planning**: Interactive chat-based travel planning
-- **Cost Optimization**: Budget-aware recommendations and cost tracking
-- **Sustainability Focus**: Eco-friendly travel options and carbon footprint tracking
-- **Accessibility Support**: Comprehensive accessibility features and recommendations
+- **AI-Powered Travel Planning**: Intelligent itinerary generation using Google Gemini AI
+- **Real-time Chat Interface**: Interactive chat with AI agent for travel assistance
+- **Vector Search**: Advanced RAG (Retrieval Augmented Generation) with Pinecone
+- **Multi-language Support**: English and Hebrew with RTL support
+- **Responsive Design**: Modern UI with dark/light theme support
 
-### Production-Ready Features
-- **Comprehensive Security**: Authentication, authorization, rate limiting, CSRF protection
-- **Error Handling & Logging**: Structured logging with severity levels and audit trails
-- **Monitoring & Alerting**: Health checks, metrics collection, and performance monitoring
-- **Performance Optimization**: Multi-strategy caching, response optimization, and memory management
-- **Testing Framework**: Unit, integration, component, and API testing with 70%+ coverage
-- **Internationalization**: Hebrew (RTL) and English support with auto-detection
+### AI Agent Capabilities
+- **Travel Guide Search**: Find relevant travel information and guides
+- **Itinerary Management**: Create, update, and manage travel itineraries
+- **Weather Information**: Get current weather data for destinations
+- **Flight Information**: Search and compare flight options
+- **Place Recommendations**: Discover attractions, restaurants, and activities
+- **Budget Planning**: Calculate travel costs and budget estimates
+
+### Technical Features
+- **TypeScript Strict Mode**: Full type safety and error prevention
+- **Comprehensive Testing**: Unit, integration, and E2E tests
+- **Accessibility**: WCAG compliant with ARIA labels and keyboard navigation
+- **Performance Optimized**: Fast loading with Next.js 14 optimizations
+- **Security**: API key authentication and rate limiting
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Next.js 14** (App Router)
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling
-- **shadcn/ui** for components
-- **Framer Motion** for animations
-- **React Hook Form** with Zod validation
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - Modern UI components
+- **next-themes** - Theme management
+- **next-intl** - Internationalization
 
 ### Backend & Services
-- **Firebase** (Auth, Firestore, Cloud Functions)
-- **Google Gemini AI** via LangChain
-- **NextAuth.js** for authentication
-- **Vector Database** (Pinecone/Weaviate) for RAG
-- **External APIs**: OpenWeatherMap, Amadeus, Google Maps, REST Countries
+- **Firebase Firestore** - NoSQL database
+- **Google Gemini AI** - Large language model
+- **Pinecone** - Vector database for RAG
+- **LangChain** - AI agent framework
+- **MCP (Model Context Protocol)** - Agent logging and session management
 
-### Security & Monitoring
-- **Comprehensive Security System**: RBAC, rate limiting, input validation
-- **Audit Logging**: Security events and user actions
-- **Health Checks**: Liveness, readiness, and comprehensive health monitoring
-- **Performance Monitoring**: Metrics collection and alerting
-- **Error Handling**: Categorized error types with structured logging
+### External APIs
+- **Google Maps API** - Places, directions, and geocoding
+- **OpenWeather API** - Weather information
+- **Flight APIs** - Flight search and booking
+
+### Development & Testing
+- **Jest** - Unit testing framework
+- **Playwright** - End-to-end testing
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+
+## 📋 Prerequisites
+
+- Node.js 18+ and npm
+- Firebase project with Firestore
+- Google Cloud Platform account
+- Pinecone account
+- LangChain account
+
+## 🚀 Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/Travel_Agent.git
+cd Travel_Agent
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment Setup
+
+Create a `.env.local` file:
+
+```env
+# Firebase Configuration
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+
+# Google Gemini AI
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Pinecone Vector Database
+PINECONE_API_KEY=your_pinecone_api_key_here
+PINECONE_INDEX_NAME=vaitravel-production
+
+# AI Agent Configuration
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langchain_api_key_here
+LANGCHAIN_PROJECT=vaitravel-agent
+
+# Application Security
+APP_API_KEY=your_secure_api_key_here
+NEXTAUTH_SECRET=your_nextauth_secret_here
+NEXTAUTH_URL=http://localhost:3000
+```
+
+### 4. Run Development Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📁 Project Structure
 
 ```
+Travel_Agent/
 ├── app/                    # Next.js App Router
+│   ├── (app)/             # Main application routes
+│   ├── (auth)/            # Authentication routes (removed)
 │   ├── api/               # API routes
-│   │   ├── health/        # Health check endpoints
-│   │   ├── weather/       # Weather API
-│   │   ├── flights/       # Flight search API
-│   │   └── ...
-│   ├── (auth)/            # Authentication pages
-│   ├── dashboard/         # User dashboard
-│   └── ...
+│   └── globals.css        # Global styles
 ├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── forms/            # Form components
-│   └── ...
-├── lib/                  # Utility libraries
-│   ├── security/         # Security system
-│   ├── error-handling/   # Error handling
-│   ├── monitoring/       # Monitoring & metrics
-│   ├── performance/      # Performance optimization
-│   └── testing/          # Testing utilities
-├── services/             # Business logic services
-│   ├── ai/              # AI services (Gemini, Vector)
-│   ├── external/        # External API services
-│   └── ...
-├── types/               # TypeScript type definitions
-├── __tests__/           # Test files
-└── docs/               # Documentation
+│   ├── auth/              # Authentication components
+│   ├── chat/              # Chat interface components
+│   ├── itinerary/         # Itinerary components
+│   ├── layouts/           # Layout components
+│   ├── pages/             # Page components
+│   ├── providers/         # Context providers
+│   └── ui/                # UI components
+├── lib/                   # Utility libraries
+│   ├── design-tokens/     # Design system tokens
+│   ├── error-handling/    # Error handling utilities
+│   ├── firebase/          # Firebase configuration
+│   ├── middleware/        # Middleware functions
+│   ├── monitoring/        # Monitoring utilities
+│   ├── performance/       # Performance utilities
+│   ├── security/          # Security utilities
+│   ├── testing/           # Test utilities
+│   └── validations/       # Validation schemas
+├── services/              # Business logic services
+│   ├── ai/                # AI-related services
+│   ├── external/          # External API services
+│   └── *.service.ts       # Core services
+├── types/                 # TypeScript type definitions
+├── __tests__/             # Unit and integration tests
+├── e2e/                   # End-to-end tests
+└── docs/                  # Documentation
 ```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm or yarn
-- Firebase project
-- Google Cloud project (for Gemini AI)
-- External API keys (OpenWeatherMap, Amadeus, Google Maps)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/ai-travel-agent.git
-   cd ai-travel-agent
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Configure the following variables:
-   ```env
-   # Security
-   NEXTAUTH_SECRET=your-secret-key
-   NEXTAUTH_URL=http://localhost:3000
-   
-   # Firebase
-   FIREBASE_PROJECT_ID=your-project-id
-   FIREBASE_CLIENT_EMAIL=your-client-email
-   FIREBASE_PRIVATE_KEY=your-private-key
-   
-   # External APIs
-   OPENWEATHER_API_KEY=your-openweather-key
-   AMADEUS_API_KEY=your-amadeus-key
-   AMADEUS_API_SECRET=your-amadeus-secret
-   GOOGLE_MAPS_API_KEY=your-google-maps-key
-   
-   # AI Services
-   GOOGLE_GEMINI_API_KEY=your-gemini-key
-   
-   # Optional: Monitoring
-   UPSTASH_REDIS_REST_URL=your-redis-url
-   UPSTASH_REDIS_REST_TOKEN=your-redis-token
-   ```
-
-4. **Set up Firebase**
-   - Create a Firebase project
-   - Enable Authentication (Email/Password, Google)
-   - Create a Firestore database
-   - Generate service account credentials
-
-5. **Set up external APIs**
-   - [OpenWeatherMap](https://openweathermap.org/api) - Weather data
-   - [Amadeus](https://developers.amadeus.com/) - Flight data
-   - [Google Maps](https://developers.google.com/maps) - Maps and places
-   - [Google Gemini](https://ai.google.dev/) - AI capabilities
-
-6. **Run the development server**
-   ```bash
-   npm run dev
-   ```
-
-7. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🧪 Testing
 
-The application includes comprehensive testing with multiple test types:
+### Run All Tests
 
-### Run Tests
 ```bash
-# Run all tests
 npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run specific test types
-npm run test:unit        # Unit tests
-npm run test:integration # Integration tests
-npm run test:api         # API tests
-npm run test:components  # Component tests
 ```
 
-### Test Coverage
-- **Minimum Coverage**: 70% for all metrics
-- **Test Types**: Unit, integration, component, API, performance, security
-- **Mocking**: Comprehensive mocking of external dependencies
-- **Test Utilities**: Custom helpers for API and component testing
+### Run Specific Test Suites
 
-## 🔒 Security
-
-The application implements comprehensive security measures:
-
-### Authentication & Authorization
-- **NextAuth.js** with multiple providers
-- **Role-Based Access Control (RBAC)**
-- **JWT token management**
-- **Session management**
-
-### Security Features
-- **Input validation and sanitization**
-- **Rate limiting and DDoS protection**
-- **CSRF protection**
-- **Security headers (CSP, HSTS, etc.)**
-- **Audit logging**
-- **Brute force protection**
-
-### Usage Example
-```typescript
-import { secure } from '@/lib/security';
-
-// Public endpoint
-export const GET = secure.public(async (req) => {
-  return NextResponse.json({ data: 'public data' });
-});
-
-// User-only endpoint
-export const POST = secure.user(async (req, context) => {
-  return NextResponse.json({ 
-    data: 'user data',
-    userId: context.userId 
-  });
-});
-```
-
-## 📊 Monitoring & Health Checks
-
-### Health Check Endpoints
-- **`/api/health`** - Comprehensive health check
-- **`/api/ready`** - Readiness check
-- **`/api/live`** - Liveness check
-- **`/api/metrics`** - Application metrics
-
-### Monitoring Features
-- **Performance metrics** (response times, memory usage)
-- **Business metrics** (user activity, error rates)
-- **Health monitoring** (database, external services)
-- **Alerting system** (configurable thresholds)
-
-### Usage Example
 ```bash
-# Check application health
-curl http://localhost:3000/api/health
+# Unit tests
+npm run test:unit
 
-# Get metrics
-curl http://localhost:3000/api/metrics
+# Integration tests
+npm run test:integration
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:coverage
 ```
 
-## ⚡ Performance
+### Test Categories
 
-### Caching System
-- **Multi-strategy caching** (LRU, FIFO, TTL)
-- **Request-level caching**
-- **Function-level caching**
-- **Tag-based invalidation**
+- **Unit Tests**: Individual component and function testing
+- **Integration Tests**: API route and service integration testing
+- **E2E Tests**: Full user journey testing with Playwright
+- **Accessibility Tests**: WCAG compliance testing
+- **Performance Tests**: Load and performance testing
 
-### Optimization Features
-- **Response compression**
-- **Image optimization**
-- **Database query optimization**
-- **Memory management**
+## 🎨 Design System
 
-### Usage Example
-```typescript
-import { withCaching } from '@/lib/performance';
+The application uses a comprehensive design system with:
 
-export const GET = withCaching(
-  'weather-cache',
-  (req) => `weather:${req.nextUrl.searchParams.get('location')}`,
-  { ttl: 300 } // 5 minutes
-)(async (req) => {
-  // Your API logic
-});
-```
+### Design Tokens
+- **Colors**: Primary, secondary, semantic color palettes
+- **Typography**: Font families, sizes, weights, and spacing
+- **Spacing**: Consistent spacing scale
+- **Shadows**: Elevation and depth
+- **Breakpoints**: Responsive design breakpoints
+
+### Components
+- **Buttons**: Primary, secondary, and variant styles
+- **Inputs**: Form inputs with validation states
+- **Cards**: Content containers with consistent styling
+- **Modals**: Overlay components for user interaction
+
+### Themes
+- **Light Theme**: Clean, bright interface
+- **Dark Theme**: Easy-on-eyes dark interface
+- **System Theme**: Automatic theme switching
 
 ## 🌍 Internationalization
 
-The application supports multiple languages with RTL support:
+### Supported Languages
+- **English (en)**: Default language
+- **Hebrew (he)**: Full RTL support
 
-- **English** (LTR)
-- **Hebrew** (RTL)
-- **Auto-detection** based on browser settings
-- **Dynamic language switching**
+### RTL Support
+- Automatic text direction detection
+- RTL-aware CSS utilities
+- Proper layout adjustments for Hebrew text
+
+## 🔒 Security
+
+### Authentication
+- API key-based authentication
+- Rate limiting and DDoS protection
+- Input validation and sanitization
+
+### Data Protection
+- Environment variable security
+- Secure API key management
+- CORS configuration
+- Error message sanitization
+
+## 📊 Performance
+
+### Optimization Features
+- **Next.js 14**: Latest performance optimizations
+- **Image Optimization**: Automatic image optimization
+- **Code Splitting**: Automatic code splitting
+- **Caching**: Strategic caching implementation
+- **Bundle Analysis**: Bundle size monitoring
+
+### Monitoring
+- **Performance Metrics**: Core Web Vitals tracking
+- **Error Tracking**: Comprehensive error monitoring
+- **Usage Analytics**: User behavior tracking
+
+## 🚀 Deployment
+
+### Production Deployment
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+### Docker Deployment
+
+```bash
+# Build Docker image
+docker build -t vai-travel-agent .
+
+# Run container
+docker run -p 3000:3000 --env-file .env.local vai-travel-agent
+```
 
 ## 📚 API Documentation
 
 ### Core Endpoints
 
-#### Health & Monitoring
-- `GET /api/health` - Comprehensive health check
-- `GET /api/ready` - Readiness check
-- `GET /api/live` - Liveness check
-- `GET /api/metrics` - Application metrics
+#### Chat API
+- `POST /api/chat` - Create new chat session
+- `GET /api/chat/[id]` - Get chat session
+- `POST /api/chat/[id]/messages` - Send message
 
-#### Travel Services
-- `GET /api/weather` - Weather data
+#### Itinerary API
+- `GET /api/itineraries` - List user itineraries
+- `POST /api/itineraries` - Create new itinerary
+- `GET /api/itineraries/[id]` - Get specific itinerary
+- `PUT /api/itineraries/[id]` - Update itinerary
+- `DELETE /api/itineraries/[id]` - Delete itinerary
+
+#### AI Search API
+- `GET /api/ai/search` - Search travel content
+- `POST /api/ai/chat` - AI chat endpoint
+- `POST /api/ai/itinerary` - Generate itinerary
+
+#### External APIs
+- `GET /api/countries` - Country information
+- `GET /api/places` - Places search
 - `GET /api/flights` - Flight search
-- `GET /api/places` - Places and attractions
-- `POST /api/itineraries` - Create itinerary
-
-#### User Management
-- `GET /api/users/profile` - User profile
-- `PUT /api/users/profile` - Update profile
-- `GET /api/users/itineraries` - User itineraries
-
-### Authentication
-All protected endpoints require authentication via NextAuth.js. Include the session token in the Authorization header:
-
-```
-Authorization: Bearer <session-token>
-```
-
-## 🚀 Deployment
-
-### Production Checklist
-- [ ] Environment variables configured
-- [ ] Security headers enabled
-- [ ] Rate limiting configured
-- [ ] Monitoring and alerting set up
-- [ ] Health checks configured
-- [ ] Caching strategy implemented
-- [ ] Error handling and logging configured
-- [ ] Test coverage meets requirements
-- [ ] Performance optimization enabled
-- [ ] Security audit completed
-
-### Deployment Options
-
-#### Vercel (Recommended)
-```bash
-npm run build
-vercel --prod
-```
-
-#### Docker
-```bash
-docker build -t ai-travel-agent .
-docker run -p 3000:3000 ai-travel-agent
-```
-
-#### Manual Deployment
-```bash
-npm run build
-npm start
-```
+- `GET /api/directions` - Directions
+- `GET /api/weather` - Weather information
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Development Setup
 
-### Development Guidelines
-- Follow TypeScript best practices
-- Write tests for new features
-- Ensure test coverage remains above 70%
-- Follow the existing code style
-- Update documentation as needed
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Code Standards
+
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Configured for code quality
+- **Prettier**: Consistent code formatting
+- **Testing**: Comprehensive test coverage
+- **Documentation**: Clear code documentation
+
+### Commit Convention
+
+```
+type(scope): description
+
+feat: add new feature
+fix: bug fix
+docs: documentation update
+style: formatting changes
+refactor: code refactoring
+test: add or update tests
+chore: maintenance tasks
+```
 
 ## 📄 License
 
@@ -355,18 +335,46 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-For support and questions:
-- Create an issue in the GitHub repository
-- Check the [documentation](docs/)
-- Review the [troubleshooting guide](docs/TROUBLESHOOTING.md)
+### Documentation
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [API Documentation](docs/API_DOCUMENTATION.md)
+- [Security Guide](docs/SECURITY_GUIDE.md)
+- [Performance Guide](docs/PERFORMANCE_GUIDE.md)
+
+### Getting Help
+- Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+- Review existing [Issues](https://github.com/your-username/Travel_Agent/issues)
+- Create a new issue for bugs or feature requests
+
+### Community
+- Join our Discord server
+- Follow us on Twitter
+- Star the repository if you find it helpful
+
+## 🗺️ Roadmap
+
+### Upcoming Features
+- [ ] Multi-user collaboration
+- [ ] Advanced itinerary sharing
+- [ ] Real-time travel updates
+- [ ] Mobile app development
+- [ ] Voice interface integration
+- [ ] Advanced AI recommendations
+
+### Performance Improvements
+- [ ] Edge computing optimization
+- [ ] Advanced caching strategies
+- [ ] Database query optimization
+- [ ] Image and asset optimization
 
 ## 🙏 Acknowledgments
 
-- [Next.js](https://nextjs.org/) - React framework
-- [Firebase](https://firebase.google.com/) - Backend services
-- [Google Gemini](https://ai.google.dev/) - AI capabilities
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- **Google Gemini AI** for powerful language understanding
+- **Pinecone** for vector database capabilities
+- **LangChain** for AI agent framework
+- **Next.js Team** for the amazing framework
+- **Vercel** for deployment platform
+- **Open Source Community** for various dependencies
 
 ---
 

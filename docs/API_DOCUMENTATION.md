@@ -1,155 +1,115 @@
-# API Documentation
+# vAI Travel Agent - API Documentation
 
-This document provides comprehensive documentation for all API endpoints in the AI Travel Agent application.
+## Overview
 
-## Table of Contents
+The vAI Travel Agent API provides comprehensive endpoints for travel planning, AI-powered assistance, and external service integration. All endpoints are RESTful and return JSON responses.
 
-1. [Authentication](#authentication)
-2. [Health & Monitoring](#health--monitoring)
-3. [User Management](#user-management)
-4. [Travel Services](#travel-services)
-5. [Itinerary Management](#itinerary-management)
-6. [Chat & AI Services](#chat--ai-services)
-7. [Error Handling](#error-handling)
-8. [Rate Limiting](#rate-limiting)
+## Base URL
+
+```
+Production: https://your-domain.com/api
+Development: http://localhost:3000/api
+```
 
 ## Authentication
 
-The application uses NextAuth.js for authentication. All protected endpoints require a valid session token.
-
-### Authentication Headers
+The API uses API key authentication. Include your API key in the request headers:
 
 ```http
-Authorization: Bearer <session-token>
+Authorization: Bearer your_api_key_here
 ```
 
-### Session Token
+Or as a query parameter:
 
-The session token is obtained through the NextAuth.js authentication flow:
+```
+?api_key=your_api_key_here
+```
 
-1. **Login**: `POST /api/auth/signin`
-2. **Session**: `GET /api/auth/session`
-3. **Logout**: `POST /api/auth/signout`
+## Response Format
 
-## Health & Monitoring
+All API responses follow this standard format:
 
-### GET /api/health
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Operation completed successfully",
+  "error": null
+}
+```
 
-Comprehensive health check endpoint that verifies all system components.
+### Error Response Format
 
-**Request:**
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "Error message",
+  "error": "Detailed error information"
+}
+```
+
+## Rate Limiting
+
+- **Rate Limit**: 100 requests per 15 minutes per IP
+- **Headers**: Rate limit information is included in response headers
+- **Exceeded**: Returns 429 status code when limit exceeded
+
+## Chat API
+
+### Create Chat Session
+
+Create a new chat session with the AI agent.
+
 ```http
-GET /api/health
+POST /api/chat
+```
+
+**Request Body:**
+```json
+{
+  "title": "Paris Travel Planning",
+  "context": {
+    "activeTools": ["search_travel_guides", "get_weather"],
+    "userPreferences": {
+      "budget": "mid-range",
+      "travelStyle": "adventure"
+    }
+  }
+}
 ```
 
 **Response:**
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "uptime": 3600,
-  "version": "1.0.0",
-  "environment": "production",
-  "checks": {
-    "database": {
-      "status": "pass",
-      "message": "Database connection healthy",
-      "responseTime": 5
-    },
-    "externalServices": {
-      "status": "pass",
-      "message": "4/4 external services healthy",
-      "responseTime": 100
-    },
-    "memory": {
-      "status": "pass",
-      "message": "Memory usage normal",
-      "details": {
-        "used": 256,
-        "total": 512,
-        "percentage": 50
+  "success": true,
+  "data": {
+    "id": "chat_123",
+    "userId": "user_456",
+    "title": "Paris Travel Planning",
+    "messages": [],
+    "context": {
+      "conversationMemory": [],
+      "activeTools": ["search_travel_guides", "get_weather"],
+      "userPreferences": {
+        "budget": "mid-range",
+        "travelStyle": "adventure"
       }
     },
-    "disk": {
-      "status": "pass",
-      "message": "Disk space normal",
-      "details": {
-        "usagePercent": 45
-      }
-    },
-    "api": {
-      "status": "pass",
-      "message": "API performance normal",
-      "details": {
-        "errorRate": 0.5,
-        "avgResponseTime": 150,
-        "totalRequests": 1000
-      }
-    }
+    "status": "active",
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:00:00Z"
   },
-  "metrics": {
-    "errorRate": 0.5,
-    "avgResponseTime": 150,
-    "totalRequests": 1000,
-    "totalErrors": 5
-  }
+  "message": "Chat session created successfully"
 }
 ```
 
-**Status Codes:**
-- `200` - All systems healthy
-- `503` - Some systems degraded
-- `500` - Critical systems failing
+### Get Chat Session
 
-### GET /api/ready
+Retrieve a specific chat session.
 
-Readiness check for container orchestration (Kubernetes, Docker).
-
-**Request:**
 ```http
-GET /api/ready
-```
-
-**Response:**
-```json
-{
-  "status": "ready",
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-**Status Codes:**
-- `200` - Application ready
-- `503` - Application not ready
-
-### GET /api/live
-
-Liveness check for basic application availability.
-
-**Request:**
-```http
-GET /api/live
-```
-
-**Response:**
-```json
-{
-  "status": "alive",
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-**Status Codes:**
-- `200` - Application alive
-
-### GET /api/metrics
-
-Application metrics endpoint (Admin only).
-
-**Request:**
-```http
-GET /api/metrics
-Authorization: Bearer <admin-session-token>
+GET /api/chat/{sessionId}
 ```
 
 **Response:**
@@ -157,738 +117,315 @@ Authorization: Bearer <admin-session-token>
 {
   "success": true,
   "data": {
-    "response_time": {
-      "count": 1000,
-      "sum": 150000,
-      "avg": 150,
-      "min": 50,
-      "max": 500,
-      "latest": 120
-    },
-    "memory_usage": {
-      "count": 1000,
-      "sum": 256000000,
-      "avg": 256000,
-      "min": 200000,
-      "max": 300000,
-      "latest": 250000
-    },
-    "requests": {
-      "/api/health": 100,
-      "/api/weather": 500,
-      "/api/flights": 200
-    },
-    "errors": {
-      "/api/weather": 5,
-      "/api/flights": 2
-    }
-  },
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-**Status Codes:**
-- `200` - Metrics retrieved successfully
-- `401` - Unauthorized (not admin)
-- `403` - Forbidden
-
-## User Management
-
-### GET /api/users/profile
-
-Get current user profile.
-
-**Request:**
-```http
-GET /api/users/profile
-Authorization: Bearer <session-token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "user-123",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "user",
-    "preferences": {
-      "language": "en",
-      "currency": "USD",
-      "notifications": {
-        "email": true,
-        "push": false
-      }
-    },
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Profile retrieved successfully
-- `401` - Unauthorized
-
-### PUT /api/users/profile
-
-Update user profile.
-
-**Request:**
-```http
-PUT /api/users/profile
-Authorization: Bearer <session-token>
-Content-Type: application/json
-
-{
-  "name": "John Smith",
-  "preferences": {
-    "language": "he",
-    "currency": "ILS",
-    "notifications": {
-      "email": true,
-      "push": true
-    }
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "user-123",
-    "email": "user@example.com",
-    "name": "John Smith",
-    "role": "user",
-    "preferences": {
-      "language": "he",
-      "currency": "ILS",
-      "notifications": {
-        "email": true,
-        "push": true
-      }
-    },
-    "updatedAt": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Profile updated successfully
-- `400` - Invalid input data
-- `401` - Unauthorized
-
-## Travel Services
-
-### GET /api/weather
-
-Get weather information for a location.
-
-**Request:**
-```http
-GET /api/weather?location=London&type=current
-Authorization: Bearer <session-token>
-```
-
-**Query Parameters:**
-- `location` (required): City name or coordinates
-- `type` (required): `current` or `forecast`
-- `days` (optional): Number of forecast days (1-7, default: 3)
-
-**Response (Current Weather):**
-```json
-{
-  "success": true,
-  "data": {
-    "location": "London",
-    "country": "GB",
-    "coordinates": {
-      "lat": 51.5074,
-      "lng": -0.1278
-    },
-    "current": {
-      "temperature": 15,
-      "feelsLike": 13,
-      "humidity": 65,
-      "pressure": 1013,
-      "visibility": 10000,
-      "uvIndex": 3,
-      "conditions": "Cloudy",
-      "description": "overcast clouds",
-      "icon": "04d",
-      "wind": {
-        "speed": 3.5,
-        "direction": 230,
-        "gust": 5.2
-      }
-    },
-    "timestamp": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Response (Forecast):**
-```json
-{
-  "success": true,
-  "data": {
-    "location": "London",
-    "country": "GB",
-    "forecast": [
+    "id": "chat_123",
+    "userId": "user_456",
+    "title": "Paris Travel Planning",
+    "messages": [
       {
-        "date": "2024-01-01",
-        "temperature": {
-          "min": 12,
-          "max": 18
-        },
-        "conditions": "Cloudy",
-        "description": "overcast clouds",
-        "icon": "04d",
-        "precipitation": {
-          "probability": 20,
-          "amount": 0.5
-        },
-        "wind": {
-          "speed": 3.5,
-          "direction": 230
-        }
-      }
-    ],
-    "timestamp": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Weather data retrieved successfully
-- `400` - Invalid parameters
-- `401` - Unauthorized
-- `503` - Weather service unavailable
-
-### GET /api/flights
-
-Search for flights.
-
-**Request:**
-```http
-GET /api/flights?origin=LHR&destination=CDG&departureDate=2024-01-15&adults=2
-Authorization: Bearer <session-token>
-```
-
-**Query Parameters:**
-- `origin` (required): IATA airport code
-- `destination` (required): IATA airport code
-- `departureDate` (required): Departure date (YYYY-MM-DD)
-- `returnDate` (optional): Return date (YYYY-MM-DD)
-- `adults` (optional): Number of adults (default: 1)
-- `children` (optional): Number of children (default: 0)
-- `infants` (optional): Number of infants (default: 0)
-- `class` (optional): Cabin class (`economy`, `premium`, `business`, `first`)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "flights": [
+        "id": "msg_1",
+        "role": "user",
+        "content": "I want to visit Paris for 3 days",
+        "timestamp": "2024-01-15T10:05:00Z",
+        "metadata": {}
+      },
       {
-        "id": "flight-123",
-        "airline": "British Airways",
-        "flightNumber": "BA304",
-        "aircraft": "Airbus A320",
-        "departure": {
-          "airport": "LHR",
-          "terminal": "5",
-          "time": "2024-01-15T08:30:00.000Z"
-        },
-        "arrival": {
-          "airport": "CDG",
-          "terminal": "2A",
-          "time": "2024-01-15T10:45:00.000Z"
-        },
-        "duration": "2h 15m",
-        "stops": 0,
-        "price": {
-          "amount": 250,
-          "currency": "EUR",
-          "perPerson": true
-        },
-        "class": "economy",
-        "baggage": {
-          "included": true,
-          "weight": "23kg"
-        },
-        "bookingUrl": "https://example.com/book/flight-123"
-      }
-    ],
-    "searchParams": {
-      "origin": "LHR",
-      "destination": "CDG",
-      "departureDate": "2024-01-15",
-      "adults": 2
-    },
-    "timestamp": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Flights retrieved successfully
-- `400` - Invalid parameters
-- `401` - Unauthorized
-- `503` - Flight service unavailable
-
-### GET /api/places
-
-Search for places and attractions.
-
-**Request:**
-```http
-GET /api/places?location=Paris&type=attraction&radius=5000
-Authorization: Bearer <session-token>
-```
-
-**Query Parameters:**
-- `location` (required): City name or coordinates
-- `type` (optional): Place type (`attraction`, `restaurant`, `hotel`, `shopping`)
-- `radius` (optional): Search radius in meters (default: 5000)
-- `keyword` (optional): Search keyword
-- `priceLevel` (optional): Price level (1-4)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "places": [
-      {
-        "id": "place-123",
-        "name": "Eiffel Tower",
-        "type": "attraction",
-        "description": "Iconic iron tower and symbol of Paris",
-        "location": {
-          "address": "Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France",
-          "coordinates": {
-            "lat": 48.8584,
-            "lng": 2.2945
-          }
-        },
-        "rating": 4.6,
-        "priceLevel": 3,
-        "openingHours": {
-          "monday": "09:30-23:45",
-          "tuesday": "09:30-23:45",
-          "wednesday": "09:30-23:45",
-          "thursday": "09:30-23:45",
-          "friday": "09:30-23:45",
-          "saturday": "09:30-23:45",
-          "sunday": "09:30-23:45"
-        },
-        "photos": [
-          "https://example.com/photo1.jpg",
-          "https://example.com/photo2.jpg"
-        ],
-        "reviews": [
-          {
-            "author": "John Doe",
-            "rating": 5,
-            "text": "Amazing view from the top!",
-            "date": "2024-01-01T00:00:00.000Z"
-          }
-        ],
-        "accessibility": {
-          "wheelchairAccessible": true,
-          "elevator": true,
-          "accessibleRestrooms": true
-        },
-        "sustainability": {
-          "ecoFriendly": true,
-          "carbonFootprint": 0,
-          "localBusiness": true
-        }
-      }
-    ],
-    "searchParams": {
-      "location": "Paris",
-      "type": "attraction",
-      "radius": 5000
-    },
-    "timestamp": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Places retrieved successfully
-- `400` - Invalid parameters
-- `401` - Unauthorized
-- `503` - Places service unavailable
-
-## Itinerary Management
-
-### GET /api/itineraries
-
-Get user's itineraries.
-
-**Request:**
-```http
-GET /api/itineraries?status=draft&limit=10&offset=0
-Authorization: Bearer <session-token>
-```
-
-**Query Parameters:**
-- `status` (optional): Filter by status (`draft`, `published`, `completed`)
-- `limit` (optional): Number of results (default: 10, max: 50)
-- `offset` (optional): Number of results to skip (default: 0)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "itineraries": [
-      {
-        "id": "itinerary-123",
-        "title": "Paris Adventure",
-        "destination": "Paris, France",
-        "startDate": "2024-01-15T00:00:00.000Z",
-        "endDate": "2024-01-20T00:00:00.000Z",
-        "travelers": 2,
-        "budget": 2000,
-        "status": "draft",
-        "days": [
-          {
-            "day": 1,
-            "date": "2024-01-15T00:00:00.000Z",
-            "theme": "Arrival and Orientation",
-            "activities": [
-              {
-                "id": "activity-1",
-                "name": "Eiffel Tower Visit",
-                "type": "attraction",
-                "description": "Visit the iconic Eiffel Tower",
-                "location": {
-                  "name": "Eiffel Tower",
-                  "address": "Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France",
-                  "coordinates": {
-                    "lat": 48.8584,
-                    "lng": 2.2945
-                  }
-                },
-                "timeSlot": {
-                  "start": "10:00",
-                  "end": "12:00",
-                  "flexible": false
-                },
-                "duration": 120,
-                "cost": 25,
-                "rating": 4.6,
-                "bookingRequired": true,
-                "accessibility": {
-                  "wheelchairAccessible": true,
-                  "visualAccessibility": true,
-                  "hearingAccessibility": false,
-                  "cognitiveAccessibility": true
-                },
-                "sustainability": {
-                  "ecoFriendly": true,
-                  "carbonFootprint": 0,
-                  "localBusiness": true,
-                  "sustainableTransport": true
-                }
-              }
-            ],
-            "estimatedCost": 150,
-            "notes": "Arrive early to explore the surroundings."
-          }
-        ],
+        "id": "msg_2",
+        "role": "assistant",
+        "content": "I'd be happy to help you plan your 3-day Paris trip!",
+        "timestamp": "2024-01-15T10:05:30Z",
         "metadata": {
-          "totalCost": 1500,
-          "sustainabilityScore": 85,
-          "accessibilityScore": 90,
-          "tags": ["paris", "culture", "accessible"],
-          "source": "ai-generated",
-          "version": 1
-        },
-        "createdAt": "2024-01-01T00:00:00.000Z",
-        "updatedAt": "2024-01-01T00:00:00.000Z"
+          "actions": [
+            {
+              "tool": "search_travel_guides",
+              "success": true,
+              "timestamp": "2024-01-15T10:05:15Z"
+            }
+          ]
+        }
       }
     ],
-    "pagination": {
-      "total": 25,
-      "limit": 10,
-      "offset": 0,
-      "hasMore": true
+    "context": {
+      "conversationMemory": ["User wants 3-day Paris trip"],
+      "activeTools": ["search_travel_guides", "get_weather"],
+      "lastAgentActions": [
+        {
+          "tool": "search_travel_guides",
+          "success": true,
+          "timestamp": "2024-01-15T10:05:15Z"
+        }
+      ]
     },
-    "timestamp": "2024-01-01T00:00:00.000Z"
+    "status": "active",
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:05:30Z"
   }
 }
 ```
 
-**Status Codes:**
-- `200` - Itineraries retrieved successfully
-- `401` - Unauthorized
+### Send Message
 
-### POST /api/itineraries
+Send a message to the AI agent and get a response.
 
-Create a new itinerary.
+```http
+POST /api/chat/{sessionId}/messages
+```
 
-**Request:**
+**Request Body:**
+```json
+{
+  "content": "What are the must-see attractions in Paris?"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "session": {
+      "id": "chat_123",
+      "messages": [
+        {
+          "id": "msg_3",
+          "role": "user",
+          "content": "What are the must-see attractions in Paris?",
+          "timestamp": "2024-01-15T10:10:00Z"
+        },
+        {
+          "id": "msg_4",
+          "role": "assistant",
+          "content": "Here are the must-see attractions in Paris...",
+          "timestamp": "2024-01-15T10:10:15Z",
+          "metadata": {
+            "actions": [
+              {
+                "tool": "search_travel_guides",
+                "success": true,
+                "timestamp": "2024-01-15T10:10:05Z"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "aiResponse": "Here are the must-see attractions in Paris...",
+    "actions": [
+      {
+        "tool": "search_travel_guides",
+        "success": true,
+        "timestamp": "2024-01-15T10:10:05Z"
+      }
+    ]
+  },
+  "message": "Message processed successfully"
+}
+```
+
+### List User Chat Sessions
+
+Get all chat sessions for a user.
+
+```http
+GET /api/chat?page=1&limit=10&status=active
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10)
+- `status` (optional): Filter by status (active, archived)
+- `search` (optional): Search by title
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "chat_123",
+      "title": "Paris Travel Planning",
+      "status": "active",
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:05:30Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 10,
+  "message": "Chat sessions fetched successfully"
+}
+```
+
+## Itinerary API
+
+### Create Itinerary
+
+Create a new travel itinerary.
+
 ```http
 POST /api/itineraries
-Authorization: Bearer <session-token>
-Content-Type: application/json
+```
 
+**Request Body:**
+```json
 {
   "title": "Paris Adventure",
   "destination": "Paris, France",
-  "startDate": "2024-01-15",
-  "endDate": "2024-01-20",
+  "startDate": "2024-02-15",
+  "endDate": "2024-02-18",
   "travelers": 2,
   "budget": 2000,
   "preferences": {
     "interests": ["culture", "food", "history"],
-    "travelStyle": {
-      "budget": "mid-range"
-    },
-    "accessibility": {
-      "mobility": true,
-      "visual": false,
-      "hearing": false,
-      "cognitive": false
-    },
-    "dietary": {
-      "restrictions": ["vegetarian"]
+    "accommodation": "hotel",
+    "transportation": "public"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "itinerary_789",
+    "userId": "user_456",
+    "title": "Paris Adventure",
+    "destination": "Paris, France",
+    "startDate": "2024-02-15",
+    "endDate": "2024-02-18",
+    "travelers": 2,
+    "budget": 2000,
+    "status": "draft",
+    "days": [],
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T10:00:00Z"
+  },
+  "message": "Itinerary created successfully"
+}
+```
+
+### Get Itinerary
+
+Retrieve a specific itinerary.
+
+```http
+GET /api/itineraries/{itineraryId}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "itinerary_789",
+    "userId": "user_456",
+    "title": "Paris Adventure",
+    "destination": "Paris, France",
+    "startDate": "2024-02-15",
+    "endDate": "2024-02-18",
+    "travelers": 2,
+    "budget": 2000,
+    "status": "confirmed",
+    "days": [
+      {
+        "day": 1,
+        "date": "2024-02-15",
+        "activities": [
+          {
+            "id": "activity_1",
+            "name": "Visit Eiffel Tower",
+            "description": "Iconic iron tower with city views",
+            "time": "10:00",
+            "location": "Champ de Mars, 7th arrondissement",
+            "duration": "2 hours",
+            "cost": 25,
+            "type": "attraction"
+          }
+        ]
+      }
+    ],
+    "createdAt": "2024-01-15T10:00:00Z",
+    "updatedAt": "2024-01-15T11:30:00Z"
+  }
+}
+```
+
+### Update Itinerary
+
+Update an existing itinerary.
+
+```http
+PUT /api/itineraries/{itineraryId}
+```
+
+**Request Body:**
+```json
+{
+  "title": "Paris Adventure - Updated",
+  "status": "confirmed",
+  "budget": 2500
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "itinerary_789",
+    "title": "Paris Adventure - Updated",
+    "status": "confirmed",
+    "budget": 2500,
+    "updatedAt": "2024-01-15T12:00:00Z"
+  },
+  "message": "Itinerary updated successfully"
+}
+```
+
+### List User Itineraries
+
+Get all itineraries for a user.
+
+```http
+GET /api/itineraries?page=1&limit=10&status=confirmed
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10)
+- `status` (optional): Filter by status (draft, confirmed, completed, cancelled)
+- `destination` (optional): Filter by destination
+- `startDate` (optional): Filter by start date
+- `endDate` (optional): Filter by end date
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "itinerary_789",
+      "title": "Paris Adventure",
+      "destination": "Paris, France",
+      "startDate": "2024-02-15",
+      "endDate": "2024-02-18",
+      "status": "confirmed",
+      "createdAt": "2024-01-15T10:00:00Z"
     }
-  }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 10,
+  "message": "Itineraries fetched successfully"
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "itinerary-123",
-    "title": "Paris Adventure",
-    "destination": "Paris, France",
-    "startDate": "2024-01-15T00:00:00.000Z",
-    "endDate": "2024-01-20T00:00:00.000Z",
-    "travelers": 2,
-    "budget": 2000,
-    "status": "draft",
-    "days": [
-      {
-        "day": 1,
-        "date": "2024-01-15T00:00:00.000Z",
-        "theme": "Arrival and Orientation",
-        "activities": [
-          {
-            "id": "activity-1",
-            "name": "Eiffel Tower Visit",
-            "type": "attraction",
-            "description": "Visit the iconic Eiffel Tower",
-            "location": {
-              "name": "Eiffel Tower",
-              "address": "Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France",
-              "coordinates": {
-                "lat": 48.8584,
-                "lng": 2.2945
-              }
-            },
-            "timeSlot": {
-              "start": "10:00",
-              "end": "12:00",
-              "flexible": false
-            },
-            "duration": 120,
-            "cost": 25,
-            "rating": 4.6,
-            "bookingRequired": true,
-            "accessibility": {
-              "wheelchairAccessible": true,
-              "visualAccessibility": true,
-              "hearingAccessibility": false,
-              "cognitiveAccessibility": true
-            },
-            "sustainability": {
-              "ecoFriendly": true,
-              "carbonFootprint": 0,
-              "localBusiness": true,
-              "sustainableTransport": true
-            }
-          }
-        ],
-        "estimatedCost": 150,
-        "notes": "Arrive early to explore the surroundings."
-      }
-    ],
-    "metadata": {
-      "totalCost": 1500,
-      "sustainabilityScore": 85,
-      "accessibilityScore": 90,
-      "tags": ["paris", "culture", "accessible"],
-      "source": "ai-generated",
-      "version": 1
-    },
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `201` - Itinerary created successfully
-- `400` - Invalid input data
-- `401` - Unauthorized
-
-### GET /api/itineraries/{id}
-
-Get a specific itinerary.
-
-**Request:**
-```http
-GET /api/itineraries/itinerary-123
-Authorization: Bearer <session-token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "itinerary-123",
-    "title": "Paris Adventure",
-    "destination": "Paris, France",
-    "startDate": "2024-01-15T00:00:00.000Z",
-    "endDate": "2024-01-20T00:00:00.000Z",
-    "travelers": 2,
-    "budget": 2000,
-    "status": "draft",
-    "days": [
-      {
-        "day": 1,
-        "date": "2024-01-15T00:00:00.000Z",
-        "theme": "Arrival and Orientation",
-        "activities": [
-          {
-            "id": "activity-1",
-            "name": "Eiffel Tower Visit",
-            "type": "attraction",
-            "description": "Visit the iconic Eiffel Tower",
-            "location": {
-              "name": "Eiffel Tower",
-              "address": "Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France",
-              "coordinates": {
-                "lat": 48.8584,
-                "lng": 2.2945
-              }
-            },
-            "timeSlot": {
-              "start": "10:00",
-              "end": "12:00",
-              "flexible": false
-            },
-            "duration": 120,
-            "cost": 25,
-            "rating": 4.6,
-            "bookingRequired": true,
-            "accessibility": {
-              "wheelchairAccessible": true,
-              "visualAccessibility": true,
-              "hearingAccessibility": false,
-              "cognitiveAccessibility": true
-            },
-            "sustainability": {
-              "ecoFriendly": true,
-              "carbonFootprint": 0,
-              "localBusiness": true,
-              "sustainableTransport": true
-            }
-          }
-        ],
-        "estimatedCost": 150,
-        "notes": "Arrive early to explore the surroundings."
-      }
-    ],
-    "metadata": {
-      "totalCost": 1500,
-      "sustainabilityScore": 85,
-      "accessibilityScore": 90,
-      "tags": ["paris", "culture", "accessible"],
-      "source": "ai-generated",
-      "version": 1
-    },
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Itinerary retrieved successfully
-- `401` - Unauthorized
-- `403` - Forbidden (not your itinerary)
-- `404` - Itinerary not found
-
-### PUT /api/itineraries/{id}
-
-Update an itinerary.
-
-**Request:**
-```http
-PUT /api/itineraries/itinerary-123
-Authorization: Bearer <session-token>
-Content-Type: application/json
-
-{
-  "title": "Updated Paris Adventure",
-  "status": "published"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "itinerary-123",
-    "title": "Updated Paris Adventure",
-    "destination": "Paris, France",
-    "startDate": "2024-01-15T00:00:00.000Z",
-    "endDate": "2024-01-20T00:00:00.000Z",
-    "travelers": 2,
-    "budget": 2000,
-    "status": "published",
-    "days": [
-      // ... existing days
-    ],
-    "metadata": {
-      // ... existing metadata
-    },
-    "updatedAt": "2024-01-01T00:00:00.000Z"
-  }
-}
-```
-
-**Status Codes:**
-- `200` - Itinerary updated successfully
-- `400` - Invalid input data
-- `401` - Unauthorized
-- `403` - Forbidden (not your itinerary)
-- `404` - Itinerary not found
-
-### DELETE /api/itineraries/{id}
+### Delete Itinerary
 
 Delete an itinerary.
 
-**Request:**
 ```http
-DELETE /api/itineraries/itinerary-123
-Authorization: Bearer <session-token>
+DELETE /api/itineraries/{itineraryId}
 ```
 
 **Response:**
@@ -899,29 +436,62 @@ Authorization: Bearer <session-token>
 }
 ```
 
-**Status Codes:**
-- `200` - Itinerary deleted successfully
-- `401` - Unauthorized
-- `403` - Forbidden (not your itinerary)
-- `404` - Itinerary not found
+## AI Search API
 
-## Chat & AI Services
+### Search Travel Content
 
-### POST /api/chat
+Search for travel-related content using AI-powered vector search.
 
-Send a message to the AI travel assistant.
-
-**Request:**
 ```http
-POST /api/chat
-Authorization: Bearer <session-token>
-Content-Type: application/json
+GET /api/ai/search?query=Paris attractions&location=Paris&type=attraction&topK=5
+```
 
+**Query Parameters:**
+- `query` (required): Search query
+- `location` (optional): Location filter
+- `type` (optional): Content type filter (itinerary, guide, review, attraction, restaurant, other)
+- `topK` (optional): Number of results (default: 10)
+
+**Response:**
+```json
 {
-  "message": "I want to plan a trip to Paris for 5 days",
+  "success": true,
+  "data": {
+    "query": "Paris attractions",
+    "location": "Paris",
+    "type": "attraction",
+    "results": [
+      {
+        "id": "attraction_1",
+        "title": "Eiffel Tower",
+        "content": "The Eiffel Tower is an iron lattice tower located on the Champ de Mars in Paris...",
+        "type": "attraction",
+        "location": "Paris, France",
+        "tags": ["landmark", "architecture", "views"],
+        "score": 0.95
+      }
+    ],
+    "total": 1
+  },
+  "message": "Search completed successfully"
+}
+```
+
+### AI Chat Endpoint
+
+Direct AI chat endpoint for simple interactions.
+
+```http
+POST /api/ai/chat
+```
+
+**Request Body:**
+```json
+{
+  "message": "What's the weather like in Paris?",
   "context": {
-    "itineraryId": "itinerary-123",
-    "conversationId": "conv-456"
+    "userId": "user_456",
+    "sessionId": "session_123"
   }
 }
 ```
@@ -931,63 +501,292 @@ Content-Type: application/json
 {
   "success": true,
   "data": {
-    "id": "message-789",
-    "message": "I'd be happy to help you plan your 5-day trip to Paris! Let me create a personalized itinerary for you.",
-    "type": "assistant",
-    "timestamp": "2024-01-01T00:00:00.000Z",
-    "suggestions": [
-      "What's your budget for this trip?",
-      "What are your main interests?",
-      "Do you have any accessibility requirements?"
-    ],
+    "response": "The current weather in Paris is 15°C with partly cloudy skies...",
     "actions": [
       {
-        "type": "create_itinerary",
-        "label": "Create Itinerary",
-        "data": {
-          "destination": "Paris",
-          "duration": 5
-        }
+        "tool": "get_weather",
+        "success": true,
+        "timestamp": "2024-01-15T10:15:00Z"
       }
     ]
+  },
+  "message": "AI response generated successfully"
+}
+```
+
+### Generate Itinerary
+
+Generate a complete itinerary using AI.
+
+```http
+POST /api/ai/itinerary
+```
+
+**Request Body:**
+```json
+{
+  "destination": "Paris, France",
+  "duration": 3,
+  "travelers": 2,
+  "budget": 2000,
+  "interests": ["culture", "food", "history"],
+  "preferences": {
+    "accommodation": "hotel",
+    "transportation": "public"
   }
 }
 ```
 
-**Status Codes:**
-- `200` - Message processed successfully
-- `400` - Invalid input data
-- `401` - Unauthorized
-- `503` - AI service unavailable
-
-## Error Handling
-
-### Error Response Format
-
-All API endpoints return errors in a consistent format:
-
+**Response:**
 ```json
 {
-  "success": false,
-  "error": "Error message",
-  "code": "ERROR_CODE",
-  "details": {
-    "field": "Additional error details"
+  "success": true,
+  "data": {
+    "itinerary": {
+      "id": "generated_123",
+      "title": "3-Day Paris Cultural Adventure",
+      "destination": "Paris, France",
+      "days": [
+        {
+          "day": 1,
+          "activities": [
+            {
+              "name": "Visit Louvre Museum",
+              "time": "10:00",
+              "duration": "3 hours",
+              "cost": 17,
+              "type": "attraction"
+            }
+          ]
+        }
+      ],
+      "totalCost": 1800,
+      "budgetRemaining": 200
+    }
   },
-  "timestamp": "2024-01-01T00:00:00.000Z"
+  "message": "Itinerary generated successfully"
 }
 ```
 
-### Common Error Codes
+## External APIs
 
-- `VALIDATION_ERROR` - Invalid input data
-- `AUTHENTICATION_ERROR` - Authentication failed
-- `AUTHORIZATION_ERROR` - Insufficient permissions
-- `NOT_FOUND_ERROR` - Resource not found
-- `EXTERNAL_API_ERROR` - External service error
-- `DATABASE_ERROR` - Database operation failed
-- `RATE_LIMIT_EXCEEDED` - Too many requests
-- `SERVICE_UNAVAILABLE` - Service temporarily unavailable
+### Countries API
+
+Get country information and search countries.
+
+```http
+GET /api/countries?action=all
+GET /api/countries?action=search&query=France
+GET /api/countries?action=region&region=Europe
+```
+
+**Query Parameters:**
+- `action` (required): Action type (all, search, region, subregion, capital, language, currency, popular, continent)
+- `query` (optional): Search query
+- `region` (optional): Region filter
+- `subregion` (optional): Subregion filter
+- `capital` (optional): Capital filter
+- `language` (optional): Language filter
+- `currency` (optional): Currency filter
+- `continent` (optional): Continent filter
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "France",
+      "code": "FR",
+      "capital": "Paris",
+      "region": "Europe",
+      "subregion": "Western Europe",
+      "population": 67000000,
+      "area": 551695,
+      "languages": ["French"],
+      "currencies": ["EUR"]
+    }
+  ],
+  "message": "Countries data fetched successfully"
+}
+```
+
+### Places API
+
+Search for places and get place information.
+
+```http
+GET /api/places?action=search&query=Eiffel Tower&location=48.8566,2.3522
+GET /api/places?action=nearby&location=48.8566,2.3522&radius=1000&type=restaurant
+GET /api/places?action=details&placeId=ChIJLU7jZClu5kcR4PcOOO6p3I0
+```
+
+**Query Parameters:**
+- `action` (required): Action type (search, nearby, details)
+- `query` (optional): Search query
+- `location` (optional): Location coordinates (lat,lng)
+- `radius` (optional): Search radius in meters
+- `type` (optional): Place type filter
+- `placeId` (optional): Google Place ID for details
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "place_id": "ChIJLU7jZClu5kcR4PcOOO6p3I0",
+      "name": "Eiffel Tower",
+      "formatted_address": "Champ de Mars, 5 Avenue Anatole France, 75007 Paris, France",
+      "geometry": {
+        "location": {
+          "lat": 48.8583701,
+          "lng": 2.2944813
+        }
+      },
+      "types": ["tourist_attraction", "point_of_interest", "establishment"],
+      "rating": 4.6,
+      "user_ratings_total": 1234567,
+      "price_level": 2
+    }
+  ],
+  "message": "Places data fetched successfully"
+}
+```
+
+### Flights API
+
+Search for flights.
+
+```http
+GET /api/flights?origin=LAX&destination=CDG&departureDate=2024-02-15&returnDate=2024-02-22&adults=2&travelClass=ECONOMY
+```
+
+**Query Parameters:**
+- `origin` (required): Origin airport code (IATA)
+- `destination` (required): Destination airport code (IATA)
+- `departureDate` (required): Departure date (YYYY-MM-DD)
+- `returnDate` (optional): Return date (YYYY-MM-DD)
+- `adults` (optional): Number of adult passengers (default: 1)
+- `children` (optional): Number of child passengers
+- `infants` (optional): Number of infant passengers
+- `travelClass` (optional): Travel class (ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST)
+- `nonStop` (optional): Non-stop flights only (default: false)
+- `maxPrice` (optional): Maximum price filter
+- `currency` (optional): Currency code (default: USD)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "flight_123",
+      "airline": "Air France",
+      "flightNumber": "AF123",
+      "departure": {
+        "airport": "LAX",
+        "time": "2024-02-15T14:30:00Z",
+        "terminal": "2"
+      },
+      "arrival": {
+        "airport": "CDG",
+        "time": "2024-02-16T08:45:00Z",
+        "terminal": "2E"
+      },
+      "duration": "11h 15m",
+      "price": {
+        "amount": 899,
+        "currency": "USD"
+      },
+      "travelClass": "ECONOMY",
+      "stops": 0
+    }
+  ],
+  "message": "Flights fetched successfully"
+}
+```
+
+### Directions API
+
+Get directions between two points.
+
+```http
+GET /api/directions?origin=Paris&destination=Lyon&mode=driving
+```
+
+**Query Parameters:**
+- `origin` (required): Origin location
+- `destination` (required): Destination location
+- `mode` (optional): Travel mode (driving, walking, bicycling, transit)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "distance": "463 km",
+      "duration": "4h 32m",
+      "mode": "driving",
+      "steps": [
+        {
+          "instruction": "Head north on Avenue des Champs-Élysées",
+          "distance": "1.2 km",
+          "duration": "3 min"
+        }
+      ],
+      "overview_polyline": "encoded_polyline_string"
+    }
+  ],
+  "message": "Directions fetched successfully"
+}
+```
+
+### Weather API
+
+Get weather information for a location.
+
+```http
+GET /api/weather?location=Paris&units=metric
+```
+
+**Query Parameters:**
+- `location` (required): Location name or coordinates
+- `units` (optional): Temperature units (metric, imperial)
+- `days` (optional): Number of forecast days (default: 5)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "location": "Paris, France",
+    "current": {
+      "temperature": 15,
+      "condition": "Partly Cloudy",
+      "humidity": 65,
+      "wind": {
+        "speed": 10,
+        "direction": "NW"
+      },
+      "visibility": 10
+    },
+    "forecast": [
+      {
+        "date": "2024-01-16",
+        "high": 18,
+        "low": 12,
+        "condition": "Sunny",
+        "precipitation": 0
+      }
+    ]
+  },
+  "message": "Weather data fetched successfully"
+}
+```
+
+## Error Codes
 
 ### HTTP Status Codes
 
@@ -999,189 +798,135 @@ All API endpoints return errors in a consistent format:
 - `404` - Not Found
 - `429` - Too Many Requests
 - `500` - Internal Server Error
-- `503` - Service Unavailable
 
-## Rate Limiting
+### Error Types
 
-The API implements rate limiting to prevent abuse:
+- `VALIDATION_ERROR` - Input validation failed
+- `AUTHENTICATION_ERROR` - Authentication failed
+- `AUTHORIZATION_ERROR` - Insufficient permissions
+- `NOT_FOUND_ERROR` - Resource not found
+- `RATE_LIMIT_ERROR` - Rate limit exceeded
+- `EXTERNAL_API_ERROR` - External service error
+- `INTERNAL_ERROR` - Internal server error
 
-- **Default Limit**: 100 requests per 15 minutes per IP
-- **Authenticated Users**: 1000 requests per 15 minutes
-- **Admin Users**: 5000 requests per 15 minutes
-
-### Rate Limit Headers
-
-```http
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1640995200
-```
-
-### Rate Limit Exceeded Response
-
-```json
-{
-  "success": false,
-  "error": "Too many requests. Please try again later.",
-  "code": "RATE_LIMIT_EXCEEDED",
-  "retryAfter": 900,
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-## SDK and Client Libraries
+## SDKs and Libraries
 
 ### JavaScript/TypeScript
 
-```typescript
-import { TravelAgentAPI } from '@ai-travel-agent/sdk';
-
-const api = new TravelAgentAPI({
-  baseURL: 'https://api.travelagent.com',
-  apiKey: 'your-api-key'
+```javascript
+// Example usage with fetch
+const response = await fetch('/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your_api_key'
+  },
+  body: JSON.stringify({
+    title: 'My Travel Chat',
+    context: {
+      activeTools: ['search_travel_guides']
+    }
+  })
 });
 
-// Get weather
-const weather = await api.weather.getCurrent('London');
-
-// Search flights
-const flights = await api.flights.search({
-  origin: 'LHR',
-  destination: 'CDG',
-  departureDate: '2024-01-15',
-  adults: 2
-});
-
-// Create itinerary
-const itinerary = await api.itineraries.create({
-  title: 'Paris Adventure',
-  destination: 'Paris, France',
-  startDate: '2024-01-15',
-  endDate: '2024-01-20',
-  travelers: 2,
-  budget: 2000
-});
+const data = await response.json();
 ```
 
 ### Python
 
 ```python
-from travel_agent import TravelAgentAPI
+import requests
 
-api = TravelAgentAPI(
-    base_url='https://api.travelagent.com',
-    api_key='your-api-key'
+headers = {
+    'Authorization': 'Bearer your_api_key',
+    'Content-Type': 'application/json'
+}
+
+response = requests.post(
+    'https://your-domain.com/api/chat',
+    headers=headers,
+    json={
+        'title': 'My Travel Chat',
+        'context': {
+            'activeTools': ['search_travel_guides']
+        }
+    }
 )
 
-# Get weather
-weather = api.weather.get_current('London')
-
-# Search flights
-flights = api.flights.search(
-    origin='LHR',
-    destination='CDG',
-    departure_date='2024-01-15',
-    adults=2
-)
-
-# Create itinerary
-itinerary = api.itineraries.create(
-    title='Paris Adventure',
-    destination='Paris, France',
-    start_date='2024-01-15',
-    end_date='2024-01-20',
-    travelers=2,
-    budget=2000
-)
+data = response.json()
 ```
 
 ## Webhooks
 
-The API supports webhooks for real-time notifications:
+### Chat Message Webhook
 
-### Webhook Events
+Receive notifications when new messages are added to chat sessions.
 
-- `itinerary.created` - New itinerary created
-- `itinerary.updated` - Itinerary updated
-- `itinerary.deleted` - Itinerary deleted
-- `user.registered` - New user registered
-- `payment.completed` - Payment completed
+**Endpoint:** `POST /webhooks/chat-message`
 
-### Webhook Payload
-
+**Payload:**
 ```json
 {
-  "event": "itinerary.created",
+  "event": "message.added",
   "data": {
-    "id": "itinerary-123",
-    "userId": "user-456",
-    "title": "Paris Adventure"
-  },
-  "timestamp": "2024-01-01T00:00:00.000Z"
+    "sessionId": "chat_123",
+    "messageId": "msg_456",
+    "role": "user",
+    "content": "Hello, AI!",
+    "timestamp": "2024-01-15T10:00:00Z"
+  }
 }
 ```
 
-### Webhook Configuration
+### Itinerary Update Webhook
 
-```http
-POST /api/webhooks
-Authorization: Bearer <admin-session-token>
-Content-Type: application/json
+Receive notifications when itineraries are updated.
 
+**Endpoint:** `POST /webhooks/itinerary-update`
+
+**Payload:**
+```json
 {
-  "url": "https://your-app.com/webhooks/travel-agent",
-  "events": ["itinerary.created", "itinerary.updated"],
-  "secret": "webhook-secret"
+  "event": "itinerary.updated",
+  "data": {
+    "itineraryId": "itinerary_789",
+    "userId": "user_456",
+    "changes": {
+      "status": "confirmed",
+      "budget": 2500
+    },
+    "timestamp": "2024-01-15T10:00:00Z"
+  }
 }
 ```
 
-## Testing
+## Rate Limits
 
-### Test Environment
-
-The API provides a test environment for development and testing:
-
-- **Base URL**: `https://api-test.travelagent.com`
-- **Test Data**: Pre-populated with test data
-- **Rate Limits**: Higher limits for testing
-- **Mock Responses**: Available for external services
-
-### Test Credentials
-
-```env
-# Test environment
-API_BASE_URL=https://api-test.travelagent.com
-API_KEY=test-api-key
-TEST_USER_EMAIL=test@example.com
-TEST_USER_PASSWORD=testpassword
-```
-
-### Postman Collection
-
-A Postman collection is available for testing all endpoints:
-
-1. Import the collection from `/docs/postman-collection.json`
-2. Set environment variables
-3. Run tests individually or as a suite
-
-## Support
-
-For API support and questions:
-
-- **Documentation**: [API Documentation](API_DOCUMENTATION.md)
-- **Status Page**: [API Status](https://status.travelagent.com)
-- **Support Email**: api-support@travelagent.com
-- **GitHub Issues**: [API Issues](https://github.com/travel-agent/api/issues)
+| Endpoint Category | Rate Limit | Window |
+|------------------|------------|---------|
+| Chat API | 100 requests | 15 minutes |
+| Itinerary API | 200 requests | 15 minutes |
+| AI Search API | 50 requests | 15 minutes |
+| External APIs | 1000 requests | 1 hour |
 
 ## Changelog
 
-### Version 1.0.0 (2024-01-01)
-
+### Version 1.0.0
 - Initial API release
-- Core travel services (weather, flights, places)
-- Itinerary management
-- AI chat integration
-- User management
-- Health monitoring
-- Rate limiting
+- Chat and itinerary management
+- AI-powered search and recommendations
+- External API integrations
 - Comprehensive error handling
+- Rate limiting and security
+
+## Support
+
+For API support:
+- Check the [Troubleshooting Guide](TROUBLESHOOTING.md)
+- Review existing [Issues](https://github.com/your-username/Travel_Agent/issues)
+- Contact support team
+
+---
+
+**API Version:** 1.0.0  
+**Last Updated:** January 15, 2024
