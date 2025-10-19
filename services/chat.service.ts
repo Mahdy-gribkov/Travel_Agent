@@ -138,7 +138,7 @@ export class ChatService {
       userId: userId || 'anonymous',
       sessionId,
       conversationHistory: await this.aiAgent.getConversationHistory(sessionId),
-      userPreferences: session.context?.userPreferences,
+      ...(session.context?.userPreferences && { userPreferences: session.context.userPreferences }),
     };
 
     // Process message with AI agent

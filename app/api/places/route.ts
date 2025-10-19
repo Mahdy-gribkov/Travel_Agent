@@ -39,11 +39,25 @@ export async function GET(request: NextRequest) {
 
     switch (validatedAction) {
       case 'search':
-        places = await mapsService.searchPlaces(validatedQuery, {
-          location: validatedLocation,
-          radius: validatedRadius,
-          type: validatedType,
-        });
+        // Parse location if provided (format: "lat,lng")
+        let locationCoords: { lat: number; lng: number } | undefined;
+        if (validatedLocation) {
+          const coords = validatedLocation.split(',').map(coord => parseFloat(coord.trim()));
+          if (coords.length === 2) {
+            const lat = coords[0]!;
+            const lng = coords[1]!;
+            if (!isNaN(lat) && !isNaN(lng)) {
+              locationCoords = { lat, lng };
+            }
+          }
+        }
+        
+        places = await mapsService.searchPlaces(
+          validatedQuery,
+          locationCoords,
+          validatedRadius,
+          validatedType
+        );
         break;
 
       case 'nearby':
@@ -53,10 +67,19 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
-        places = await mapsService.getNearbyPlaces(validatedLocation, {
-          radius: validatedRadius || 5000,
-          type: validatedType,
-        });
+        // Parse location for nearby search
+        const nearbyCoords = validatedLocation.split(',').map(coord => parseFloat(coord.trim()));
+        if (nearbyCoords.length !== 2 || isNaN(nearbyCoords[0]!) || isNaN(nearbyCoords[1]!)) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid location format. Use "lat,lng"' },
+            { status: 400 }
+          );
+        }
+        places = await mapsService.getNearbyPlaces(
+          { lat: nearbyCoords[0]!, lng: nearbyCoords[1]! },
+          validatedRadius || 5000,
+          validatedType
+        );
         break;
 
       case 'details':

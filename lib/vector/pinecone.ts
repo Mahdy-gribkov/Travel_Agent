@@ -162,7 +162,7 @@ export class PineconeVectorStore {
       return queryResponse.matches?.map(match => ({
         id: match.id,
         score: match.score || 0,
-        metadata: match.metadata,
+        metadata: match.metadata || {},
       })) || [];
     } catch (error) {
       console.error('Failed to query vectors:', error);
@@ -258,7 +258,7 @@ export class PineconeVectorStore {
     const vectors: VectorItem[] = [];
     
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
+      const chunk = chunks[i]!;
       const embedding = await this.generateEmbedding(chunk);
       
       vectors.push({
@@ -288,5 +288,4 @@ export function getVectorStore(): PineconeVectorStore {
   return vectorStore;
 }
 
-// Export types
-export type { VectorItem, QueryResult, EmbeddingOptions };
+// All types are already exported as interfaces above

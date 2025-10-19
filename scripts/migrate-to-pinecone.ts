@@ -80,7 +80,7 @@ class PineconeMigration {
         .collection('travel_guides')
         .get();
 
-      guidesSnapshot.forEach(doc => {
+      guidesSnapshot.forEach((doc: any) => {
         documents.push({
           id: doc.id,
           ...doc.data(),
@@ -94,7 +94,7 @@ class PineconeMigration {
         .collection('itineraries')
         .get();
 
-      itinerariesSnapshot.forEach(doc => {
+      itinerariesSnapshot.forEach((doc: any) => {
         documents.push({
           id: doc.id,
           ...doc.data(),
@@ -108,7 +108,7 @@ class PineconeMigration {
         .collection('travel_tips')
         .get();
 
-      tipsSnapshot.forEach(doc => {
+      tipsSnapshot.forEach((doc: any) => {
         documents.push({
           id: doc.id,
           ...doc.data(),
@@ -122,7 +122,7 @@ class PineconeMigration {
         .collection('destinations')
         .get();
 
-      destinationsSnapshot.forEach(doc => {
+      destinationsSnapshot.forEach((doc: any) => {
         documents.push({
           id: doc.id,
           ...doc.data(),
