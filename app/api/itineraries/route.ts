@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware/auth';
+
 import { withRateLimit } from '@/lib/middleware/rate-limit';
 import { withValidation } from '@/lib/middleware/validation';
 import { withQueryValidation } from '@/lib/middleware/validation';

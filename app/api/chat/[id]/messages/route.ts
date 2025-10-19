@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware/auth';
 import { withValidation } from '@/lib/middleware/validation';
 import { ChatService } from '@/services/chat.service';
 import { chatMessageSchema } from '@/lib/validations/schemas';

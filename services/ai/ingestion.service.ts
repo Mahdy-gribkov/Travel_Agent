@@ -1,11 +1,18 @@
-import { VectorService, Document } from './vector.service';
+import { getVectorStore, VectorItem } from '@/lib/vector/pinecone';
 import { adminDb } from '@/lib/firebase/admin';
 
+export interface Document {
+  id: string;
+  content: string;
+  metadata: Record<string, any>;
+}
+
 export class IngestionService {
-  private vectorService: VectorService;
+  private vectorStore = getVectorStore();
 
   constructor() {
-    this.vectorService = new VectorService();
+    // Initialize Pinecone on construction
+    this.vectorStore.init().catch(console.error);
   }
 
   async ingestSampleData(): Promise<void> {
@@ -336,7 +343,7 @@ Remember: Traveling with disabilities requires extra planning, but it's absolute
     ];
 
     try {
-      await this.vectorService.upsertDocuments(sampleDocuments);
+      await this.upsertDocuments(sampleDocuments);
       console.log(`Successfully ingested ${sampleDocuments.length} sample documents`);
     } catch (error) {
       console.error('Error ingesting sample data:', error);
@@ -359,7 +366,7 @@ Remember: Traveling with disabilities requires extra planning, but it's absolute
         },
       };
 
-      await this.vectorService.upsertDocuments([document]);
+      await this.upsertDocuments([document]);
       console.log(`Successfully ingested itinerary: ${itinerary.title}`);
     } catch (error) {
       console.error('Error ingesting itinerary:', error);
@@ -435,10 +442,39 @@ Remember: Traveling with disabilities requires extra planning, but it's absolute
 
   async getIngestionStats(): Promise<any> {
     try {
-      return await this.vectorService.getIndexStats();
+      return await this.vectorStore.getIndexStats();
     } catch (error) {
       console.error('Error getting ingestion stats:', error);
       return { error: 'Failed to get stats' };
+    }
+  }
+
+  /**
+   * Upsert documents to Pinecone vector store
+   */
+  private async upsertDocuments(documents: Document[]): Promise<void> {
+    const vectors: VectorItem[] = [];
+
+    for (const doc of documents) {
+      try {
+        // Process the document content into chunks and generate embeddings
+        const docVectors = await this.vectorStore.processText(
+          doc.content,
+          {
+            ...doc.metadata,
+            documentId: doc.id,
+            originalContent: doc.content,
+          }
+        );
+        vectors.push(...docVectors);
+      } catch (error) {
+        console.error(`Error processing document ${doc.id}:`, error);
+        // Continue with other documents
+      }
+    }
+
+    if (vectors.length > 0) {
+      await this.vectorStore.upsertVectors(vectors);
     }
   }
 }

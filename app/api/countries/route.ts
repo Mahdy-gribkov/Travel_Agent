@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/middleware/auth';
+
 import { withQueryValidation } from '@/lib/middleware/validation';
 import { CountriesService } from '@/services/external/countries.service';
 import { z } from 'zod';

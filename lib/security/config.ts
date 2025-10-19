@@ -5,7 +5,6 @@ import { withAuditLogging, AuditAction } from './audit';
 import { withRBAC, Permission, UserRole } from './rbac';
 import { withValidation } from '../middleware/validation';
 import { withApiKey, withOptionalApiKey } from '../middleware/api-key';
-import { withAuth } from '../middleware/auth';
 import { z } from 'zod';
 
 // Security configuration interface
@@ -14,8 +13,8 @@ export interface SecurityConfig {
   auth?: {
     required: boolean;
     type?: 'api-key' | 'session';
-    roles?: UserRole[];
-    permissions?: Permission[];
+    roles?: readonly UserRole[];
+    permissions?: readonly Permission[];
   };
   
   // Rate limiting
@@ -226,33 +225,18 @@ export function createSecureHandler(
   
   // Apply authentication and authorization
   if (securityConfig.auth?.required) {
-    const authType = securityConfig.auth.type || 'api-key';
+    // Apply API key authentication
+    const authMiddleware = (req: NextRequest, context?: any) => {
+      return withApiKey(req, async (authReq, apiKeyContext) => {
+        return middleware(authReq, { ...context, ...apiKeyContext });
+      });
+    };
+    middleware = authMiddleware;
     
-    if (authType === 'api-key') {
-      // Apply API key authentication
-      const authMiddleware = (req: NextRequest, context?: any) => {
-        return withApiKey(req, async (authReq, apiKeyContext) => {
-          return middleware(authReq, { ...context, ...apiKeyContext });
-        });
-      };
-      middleware = authMiddleware;
-    } else if (authType === 'session') {
-      // Apply session-based authentication (legacy)
-      const authMiddleware = (req: NextRequest, context?: any) => {
-        return withAuth(req, async (authReq, token) => {
-          return middleware(authReq, { ...context, userId: token.uid });
-        });
-      };
-      middleware = authMiddleware;
-    }
-    
-    // Apply RBAC if permissions or roles are specified
+    // Apply RBAC if permissions are specified
     if ((securityConfig.auth as any).permissions && (securityConfig.auth as any).permissions.length > 0) {
       // Use the first permission for RBAC (in a real app, you might want to check all)
       middleware = withRBAC((securityConfig.auth as any).permissions[0], middleware);
-    } else if ((securityConfig.auth as any).roles && (securityConfig.auth as any).roles.length > 0) {
-      // Apply role-based middleware
-      middleware = withRole((securityConfig.auth as any).roles, middleware);
     }
   }
   
@@ -317,39 +301,6 @@ function withResourceOwnership(
   };
 }
 
-// Role-based middleware helper (moved to avoid conflicts)
-function withRole(
-  allowedRoles: UserRole[],
-  handler: (req: NextRequest, context: any) => Promise<NextResponse>
-) {
-  return async (req: NextRequest, context?: any): Promise<NextResponse> => {
-    const userId = req.headers.get('x-user-id');
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID not found in request' },
-        { status: 401 }
-      );
-    }
-    
-    // In a real implementation, you would check the user's role from the database
-    // For now, we'll assume the role is passed in the context or headers
-    const userRole = req.headers.get('x-user-role') as UserRole;
-    
-    if (!userRole || !allowedRoles.includes(userRole)) {
-      return NextResponse.json(
-        {
-          error: 'Insufficient role',
-          message: `Required roles: ${allowedRoles.join(', ')}`,
-          userRole,
-        },
-        { status: 403 }
-      );
-    }
-    
-    return handler(req, { ...context, userRole });
-  };
-}
 
 // Environment-based security configuration
 export function getEnvironmentSecurityConfig(): Partial<SecurityConfig> {

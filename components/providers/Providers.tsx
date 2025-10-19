@@ -1,6 +1,5 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { I18nextProvider } from 'react-i18next';
 import { FirebaseProvider } from './FirebaseProvider';
@@ -12,19 +11,17 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <I18nextProvider i18n={i18n}>
-          <FirebaseProvider>
-            {children}
-          </FirebaseProvider>
-        </I18nextProvider>
-      </ThemeProvider>
-    </SessionProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <I18nextProvider i18n={i18n}>
+        <FirebaseProvider>
+          {children}
+        </FirebaseProvider>
+      </I18nextProvider>
+    </ThemeProvider>
   );
 }
