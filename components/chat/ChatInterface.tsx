@@ -1,328 +1,315 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, Bot, User, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { ChatMessage } from '@/types';
+import React, { useState, useRef, useEffect } from 'react';
+import { useTheme } from '@/components/providers/ThemeProvider';
+import { designTokens } from '@/lib/design-tokens';
 
-interface ChatInterfaceProps {
-  sessionId?: string;
-  onSessionCreated?: (sessionId: string) => void;
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  metadata?: {
+    actions?: Array<{
+      tool: string;
+      success: boolean;
+      timestamp: Date;
+      error?: string;
+    }>;
+  };
 }
 
-export function ChatInterface({ sessionId, onSessionCreated }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
+interface ChatInterfaceProps {
+  messages: Message[];
+  onSendMessage: (message: string) => void;
+  isLoading?: boolean;
+  className?: string;
+  placeholder?: string;
+  maxLength?: number;
+  disabled?: boolean;
+}
+
+export function ChatInterface({
+  messages,
+  onSendMessage,
+  isLoading = false,
+  className = '',
+  placeholder = 'Ask me anything about your travel plans...',
+  maxLength = 2000,
+  disabled = false,
+}: ChatInterfaceProps) {
+  const [inputValue, setInputValue] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { isDark } = useTheme();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Focus input when component mounts
   useEffect(() => {
-    if (sessionId && sessionId !== currentSessionId) {
-      setCurrentSessionId(sessionId);
-      loadChatHistory(sessionId);
-    }
-  }, [sessionId, currentSessionId]);
+    inputRef.current?.focus();
+  }, []);
 
-  const loadChatHistory = async (sessionId: string) => {
-    try {
-      const response = await fetch(`/api/chat/${sessionId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setMessages(data.data.messages || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading || disabled) return;
+
+    onSendMessage(inputValue.trim());
+    setInputValue('');
   };
 
-  const createNewSession = async () => {
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: 'New Chat',
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const newSessionId = data.data.id;
-          setCurrentSessionId(newSessionId);
-          setMessages([]);
-          onSessionCreated?.(newSessionId);
-          return newSessionId;
-        }
-      }
-      throw new Error('Failed to create chat session');
-    } catch (error) {
-      console.error('Error creating chat session:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create new chat session.',
-        variant: 'destructive',
-      });
-      return null;
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
-
-    const userMessage: ChatMessage = {
-      id: `user_${Date.now()}`,
-      role: 'user',
-      content: inputMessage.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsLoading(true);
-
-    try {
-      // Create session if it doesn't exist
-      let sessionId = currentSessionId;
-      if (!sessionId) {
-        sessionId = await createNewSession();
-        if (!sessionId) return;
-      }
-
-      // Send message to AI
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage.content,
-          sessionId: sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        const aiMessage: ChatMessage = {
-          id: `ai_${Date.now()}`,
-          role: 'assistant',
-          content: data.data.response,
-          timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, aiMessage]);
-      } else {
-        throw new Error(data.error || 'Failed to get response');
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
-      sendMessage();
+      handleSubmit(e);
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTimestamp = (timestamp: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+      hour12: true,
+    }).format(timestamp);
   };
 
-  return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Chat Header */}
-      <Card className="mb-4">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Bot className="h-5 w-5 text-blue-600" />
-              <span>AI Travel Assistant</span>
-            </CardTitle>
-            <Badge variant="secondary">Online</Badge>
-          </div>
-        </CardHeader>
-      </Card>
+  const renderMessage = (message: Message) => {
+    const isUser = message.role === 'user';
+    const isAssistant = message.role === 'assistant';
+    const isSystem = message.role === 'system';
 
-      {/* Messages */}
-      <Card className="flex-1 flex flex-col">
-        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Bot className="h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Welcome to your AI Travel Assistant!
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Ask me anything about travel planning, destinations, or get help with your itinerary.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-md">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInputMessage('Help me plan a trip to Tokyo')}
-                  className="text-left justify-start"
-                >
-                  Plan a trip to Tokyo
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInputMessage('What are the best restaurants in Paris?')}
-                  className="text-left justify-start"
-                >
-                  Best restaurants in Paris
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInputMessage('Find eco-friendly hotels in Barcelona')}
-                  className="text-left justify-start"
-                >
-                  Eco-friendly hotels
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInputMessage('Create an accessible itinerary for London')}
-                  className="text-left justify-start"
-                >
-                  Accessible London itinerary
-                </Button>
+    if (isSystem) {
+  return (
+        <div
+          key={message.id}
+          className="flex justify-center my-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 px-4 py-2 rounded-full text-sm">
+            {message.content}
               </div>
             </div>
-          ) : (
-            messages.map((message) => (
+      );
+    }
+
+    return (
               <div
                 key={message.id}
-                className={`flex items-start space-x-3 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.role === 'assistant' && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
-                      <Bot className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div
-                  className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      message.role === 'user'
-                        ? 'text-blue-100'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {formatTime(message.timestamp)}
+        className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
+        role="article"
+        aria-label={`${isUser ? 'Your' : 'Assistant'} message`}
+      >
+        <div
+          className={`
+            chat-message max-w-[80%] relative
+            ${isUser 
+              ? 'chat-message-user bg-primary-500 text-white' 
+              : 'chat-message-assistant bg-neutral-100 dark:bg-neutral-800 text-text-primary'
+            }
+          `}
+        >
+          {/* Message content */}
+          <div className="prose prose-sm max-w-none">
+            <p className="whitespace-pre-wrap break-words m-0">
+              {message.content}
                   </p>
                 </div>
 
-                {message.role === 'user' && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-gray-100 text-gray-600">
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
+          {/* Timestamp */}
+          <div
+            className={`
+              text-xs mt-2 opacity-70
+              ${isUser ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}
+            `}
+          >
+            {formatTimestamp(message.timestamp)}
+          </div>
+
+          {/* Agent actions indicator */}
+          {isAssistant && message.metadata?.actions && (
+            <div className="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+              <div className="flex flex-wrap gap-1">
+                {message.metadata.actions.map((action, index) => (
+                  <span
+                    key={index}
+                    className={`
+                      inline-flex items-center px-2 py-1 rounded-full text-xs
+                      ${action.success 
+                        ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200' 
+                        : 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
+                      }
+                    `}
+                    title={action.error || `${action.tool} executed successfully`}
+                  >
+                    {action.success ? '✓' : '✗'} {action.tool}
+                  </span>
+                ))}
+              </div>
+            </div>
                 )}
               </div>
-            ))
-          )}
-          
+      </div>
+    );
+  };
+
+  return (
+    <div className={`flex flex-col h-full ${className}`}>
+      {/* Messages container */}
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-2"
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
+        aria-atomic="false"
+      >
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-neutral-500 dark:text-neutral-400">
+              <div className="w-16 h-16 mx-auto mb-4 opacity-50">
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
+              <p className="text-sm">
+                Ask me anything about travel planning, destinations, or itineraries.
+              </p>
+            </div>
+          </div>
+        ) : (
+          messages.map(renderMessage)
+        )}
+        
+        {/* Loading indicator */}
           {isLoading && (
-            <div className="flex items-start space-x-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-blue-100 text-blue-600">
-                  <Bot className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-2">
+          <div className="flex justify-start mb-4">
+            <div className="chat-message chat-message-assistant">
                 <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Thinking...
-                  </span>
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                </div>
+                <span className="text-sm text-neutral-500">AI is thinking...</span>
                 </div>
               </div>
             </div>
           )}
           
           <div ref={messagesEndRef} />
-        </CardContent>
+      </div>
 
-        {/* Input */}
-        <div className="border-t p-4">
-          <div className="flex space-x-2">
+      {/* Input form */}
+      <form
+        onSubmit={handleSubmit}
+        className="border-t border-neutral-200 dark:border-neutral-700 p-4"
+        role="form"
+        aria-label="Send message"
+      >
+        <div className="flex items-end space-x-3">
             <div className="flex-1 relative">
-              <Input
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me anything about travel..."
-                disabled={isLoading}
-                className="pr-10"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1 h-8 w-8 p-0"
-                disabled
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              placeholder={placeholder}
+              maxLength={maxLength}
+              disabled={disabled || isLoading}
+              rows={1}
+              className={`
+                input resize-none min-h-[2.5rem] max-h-32
+                ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                focus:ring-2 focus:ring-primary-500 focus:border-transparent
+              `}
+              style={{
+                height: 'auto',
+                minHeight: '2.5rem',
+              }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = `${Math.min(target.scrollHeight, 128)}px`;
+              }}
+              aria-label="Message input"
+              aria-describedby="input-help"
+            />
+            
+            {/* Character count */}
+            {maxLength && (
+              <div
+                id="input-help"
+                className={`
+                  absolute bottom-1 right-2 text-xs
+                  ${inputValue.length > maxLength * 0.9 
+                    ? 'text-error-500' 
+                    : 'text-neutral-400 dark:text-neutral-500'
+                  }
+                `}
               >
-                <Paperclip className="h-4 w-4" />
-              </Button>
+                {inputValue.length}/{maxLength}
             </div>
-            <Button
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className="px-4"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            )}
+            </div>
+          
+          <button
+            type="submit"
+            disabled={!inputValue.trim() || isLoading || disabled}
+            className={`
+              btn btn-primary px-4 py-2 min-w-[2.5rem] h-10
+              ${!inputValue.trim() || isLoading || disabled 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:bg-primary-600 active:bg-primary-700'
+              }
+              transition-all duration-200
+            `}
+            aria-label="Send message"
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            )}
+          </button>
           </div>
+        
+        {/* Input hints */}
+        <div className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+          Press Enter to send, Shift+Enter for new line
         </div>
-      </Card>
+      </form>
     </div>
   );
 }
+
+export default ChatInterface;

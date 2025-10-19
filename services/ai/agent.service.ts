@@ -107,7 +107,7 @@ export class AIAgentService {
               { type: 'itinerary' }
             );
             return JSON.stringify(results);
-          } catch (error) {
+    } catch (error) {
             return `Error searching itineraries: ${error}`;
           }
         },
@@ -127,7 +127,7 @@ export class AIAgentService {
               humidity: '65%',
               wind: '10 km/h',
             });
-          } catch (error) {
+    } catch (error) {
             return `Error getting weather: ${error}`;
           }
         },
@@ -151,7 +151,7 @@ export class AIAgentService {
                 },
               ],
             });
-          } catch (error) {
+    } catch (error) {
             return `Error getting flight info: ${error}`;
           }
         },
@@ -171,7 +171,7 @@ export class AIAgentService {
               address: '123 Main St',
               hours: '9:00 AM - 6:00 PM',
             });
-          } catch (error) {
+    } catch (error) {
             return `Error getting place info: ${error}`;
           }
         },
@@ -193,7 +193,7 @@ export class AIAgentService {
                 activities: '$100',
               },
             });
-          } catch (error) {
+    } catch (error) {
             return `Error calculating budget: ${error}`;
           }
         },
@@ -212,7 +212,7 @@ export class AIAgentService {
               status: 'created',
               message: 'Itinerary created successfully',
             });
-          } catch (error) {
+    } catch (error) {
             return `Error creating itinerary: ${error}`;
           }
         },
@@ -230,7 +230,7 @@ export class AIAgentService {
               status: 'updated',
               message: 'Itinerary updated successfully',
             });
-          } catch (error) {
+    } catch (error) {
             return `Error updating itinerary: ${error}`;
           }
         },
@@ -251,7 +251,7 @@ export class AIAgentService {
                 interests: ['culture', 'nature'],
               },
             });
-          } catch (error) {
+    } catch (error) {
             return `Error getting user preferences: ${error}`;
           }
         },
@@ -270,7 +270,7 @@ export class AIAgentService {
               type: 'agent_action',
             });
             return 'Action logged successfully';
-          } catch (error) {
+    } catch (error) {
             return `Error logging action: ${error}`;
           }
         },
@@ -300,7 +300,7 @@ export class AIAgentService {
               success: true,
               timestamp: new Date(),
             });
-          } else {
+      } else {
             actions.push({
               tool: toolName,
               success: false,

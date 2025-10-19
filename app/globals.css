@@ -51,10 +51,10 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-neutral-200 dark:border-neutral-700;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background-primary text-text-primary;
   }
 }
 
@@ -93,20 +93,20 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  @apply bg-neutral-100 dark:bg-neutral-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground rounded-full;
+  @apply bg-neutral-400 dark:bg-neutral-600 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-foreground;
+  @apply bg-neutral-500 dark:bg-neutral-500;
 }
 
 /* Focus styles */
 .focus-visible {
-  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-background-primary;
 }
 
 /* Animation utilities */
