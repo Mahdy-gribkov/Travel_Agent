@@ -1,9 +1,11 @@
 import { adminDb } from '@/lib/firebase/admin';
 import { ChatSession, ChatMessage, ChatContext } from '@/types';
 import { createChatSessionSchema, chatMessageSchema } from '@/lib/validations/schemas';
+import { AIAgentService, AgentContext } from './ai/agent.service';
 
 export class ChatService {
   private collection = adminDb?.collection('chatSessions');
+  private aiAgent = new AIAgentService();
 
   async createChatSession(userId: string, sessionData: any): Promise<ChatSession> {
     const validatedData = createChatSessionSchema.parse(sessionData);
@@ -107,6 +109,89 @@ export class ChatService {
     return updatedSession;
   }
 
+  /**
+   * Process a user message with the AI agent and return the response
+   */
+  async processMessageWithAI(sessionId: string, userMessage: string, userId?: string): Promise<{
+    session: ChatSession;
+    aiResponse: string;
+    actions: any[];
+  }> {
+    const session = await this.getChatSession(sessionId);
+    if (!session) {
+      throw new Error('Chat session not found');
+    }
+
+    // Add user message to session
+    const userChatMessage: ChatMessage = {
+      id: this.generateMessageId(),
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date(),
+      metadata: {},
+    };
+
+    const updatedMessages = [...session.messages, userChatMessage];
+
+    // Create agent context
+    const agentContext: AgentContext = {
+      userId: userId || 'anonymous',
+      sessionId,
+      conversationHistory: await this.aiAgent.getConversationHistory(sessionId),
+      userPreferences: session.context?.userPreferences,
+    };
+
+    // Process message with AI agent
+    const { response: aiResponse, actions } = await this.aiAgent.processMessage(
+      userMessage,
+      agentContext
+    );
+
+    // Add AI response to session
+    const aiChatMessage: ChatMessage = {
+      id: this.generateMessageId(),
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date(),
+      metadata: {
+        actions: actions.map(action => ({
+          tool: action.tool,
+          success: action.success,
+          timestamp: action.timestamp,
+        })),
+      },
+    };
+
+    const finalMessages = [...updatedMessages, aiChatMessage];
+
+    // Update session
+    const updatedSession: ChatSession = {
+      ...session,
+      messages: finalMessages,
+      updatedAt: new Date(),
+      context: {
+        ...session.context,
+        conversationMemory: this.updateConversationMemory(
+          this.updateConversationMemory(session.context.conversationMemory, userChatMessage),
+          aiChatMessage
+        ),
+        lastAgentActions: actions,
+      },
+    };
+
+    await this.collection.doc(sessionId).update({
+      messages: finalMessages,
+      context: updatedSession.context,
+      updatedAt: new Date(),
+    });
+
+    return {
+      session: updatedSession,
+      aiResponse,
+      actions,
+    };
+  }
+
   async updateChatSession(id: string, updateData: any): Promise<ChatSession> {
     const session = await this.getChatSession(id);
     if (!session) {
@@ -192,5 +277,12 @@ export class ChatService {
 
   private generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Get AI agent statistics
+   */
+  async getAgentStats(): Promise<any> {
+    return await this.aiAgent.getAgentStats();
   }
 }
