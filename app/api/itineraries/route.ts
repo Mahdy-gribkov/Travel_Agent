@@ -1,90 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { withRateLimit } from '@/lib/middleware/rate-limit';
-import { withValidation } from '@/lib/middleware/validation';
-import { withQueryValidation } from '@/lib/middleware/validation';
 import { ItineraryService } from '@/services/itinerary.service';
 import { createItinerarySchema } from '@/lib/validations/schemas';
 import { itineraryQuerySchema } from '@/lib/validations/schemas';
 
 const itineraryService = new ItineraryService();
-const rateLimit = withRateLimit();
 
 export async function GET(request: NextRequest) {
-  return withQueryValidation(
-    itineraryQuerySchema,
-    async (req, queryData) => {
-      return withAuth(
-        req,
-        async (authReq, token) => {
-          try {
-            const { page, limit, status, destination, startDate, endDate } = queryData;
-            const pageNum = parseInt(page || '1', 10) || 1;
-            const limitNum = parseInt(limit || '10', 10) || 10;
-            
-            const filters: any = {};
-            if (status) filters.status = status;
-            if (destination) filters.destination = destination;
-            if (startDate) filters.startDate = startDate;
-            if (endDate) filters.endDate = endDate;
+  try {
+    const url = new URL(request.url);
+    const page = url.searchParams.get('page');
+    const limit = url.searchParams.get('limit');
+    const status = url.searchParams.get('status');
+    const destination = url.searchParams.get('destination');
+    const startDate = url.searchParams.get('startDate');
+    const endDate = url.searchParams.get('endDate');
 
-            const { itineraries, total } = await itineraryService.getUserItineraries(
-              token.uid as string,
-              pageNum,
-              limitNum,
-              filters
-            );
+    const queryData = itineraryQuerySchema.parse({
+      page,
+      limit,
+      status,
+      destination,
+      startDate,
+      endDate,
+    });
 
-            return NextResponse.json({
-              success: true,
-              data: itineraries,
-              pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                totalPages: Math.ceil(total / limitNum),
-              },
-            });
-          } catch (error) {
-            console.error('Error fetching itineraries:', error);
-            return NextResponse.json(
-              { success: false, error: 'Failed to fetch itineraries' },
-              { status: 500 }
-            );
-          }
-        }
-      );
-    }
-  );
+    const { page: validatedPage, limit: validatedLimit, status: validatedStatus, destination: validatedDestination, startDate: validatedStartDate, endDate: validatedEndDate } = queryData;
+    const pageNum = parseInt(validatedPage || '1', 10) || 1;
+    const limitNum = parseInt(validatedLimit || '10', 10) || 10;
+    
+    const filters: any = {};
+    if (validatedStatus) filters.status = validatedStatus;
+    if (validatedDestination) filters.destination = validatedDestination;
+    if (validatedStartDate) filters.startDate = validatedStartDate;
+    if (validatedEndDate) filters.endDate = validatedEndDate;
+
+    // For now, use a default user ID since we don't have session-based auth
+    const userId = 'default-user';
+    
+    const result = await itineraryService.getUserItineraries(userId, pageNum, limitNum, filters);
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+      message: 'Itineraries retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Error fetching itineraries:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch itineraries' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
-  return withValidation(
-    createItinerarySchema,
-    async (req, data) => {
-      return withAuth(
-        req,
-        async (authReq, token) => {
-          try {
-            const itinerary = await itineraryService.createItinerary(
-              token.uid as string,
-              data
-            );
+  try {
+    const body = await request.json();
+    const itineraryData = createItinerarySchema.parse(body);
+    
+    // For now, use a default user ID since we don't have session-based auth
+    const userId = 'default-user';
+    
+    const itinerary = await itineraryService.createItinerary(userId, itineraryData);
 
-            return NextResponse.json({
-              success: true,
-              data: itinerary,
-              message: 'Itinerary created successfully',
-            }, { status: 201 });
-          } catch (error) {
-            console.error('Error creating itinerary:', error);
-            return NextResponse.json(
-              { success: false, error: 'Failed to create itinerary' },
-              { status: 500 }
-            );
-          }
-        }
-      );
-    }
-  );
+    return NextResponse.json({
+      success: true,
+      data: itinerary,
+      message: 'Itinerary created successfully',
+    });
+  } catch (error) {
+    console.error('Error creating itinerary:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to create itinerary' },
+      { status: 500 }
+    );
+  }
 }

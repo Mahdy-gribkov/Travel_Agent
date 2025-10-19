@@ -172,6 +172,7 @@ export interface MessageMetadata {
   model?: string;
   tools?: string[];
   attachments?: Attachment[];
+  actions?: AgentActionMetadata[];
 }
 
 export interface Attachment {
@@ -185,6 +186,14 @@ export interface ChatContext {
   userPreferences?: UserPreferences;
   conversationMemory: string[];
   activeTools: string[];
+  lastAgentActions?: AgentActionMetadata[];
+}
+
+export interface AgentActionMetadata {
+  tool: string;
+  success: boolean;
+  timestamp: Date;
+  error?: string;
 }
 
 // Price Alert Types

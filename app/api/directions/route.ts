@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { withQueryValidation } from '@/lib/middleware/validation';
 import { MapsService } from '@/services/external/maps.service';
 import { z } from 'zod';
 
@@ -11,52 +9,40 @@ const directionsQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  // Skip during static generation
-  if (process.env.NODE_ENV === 'production' && !request.headers.get('authorization')) {
-    return NextResponse.json({ success: false, error: 'Not available during build' }, { status: 503 });
+  try {
+    const url = new URL(request.url);
+    const origin = url.searchParams.get('origin');
+    const destination = url.searchParams.get('destination');
+    const mode = url.searchParams.get('mode') || 'driving';
+
+    // Validate query parameters
+    const queryData = directionsQuerySchema.parse({
+      origin,
+      destination,
+      mode,
+    });
+
+    const { origin: validatedOrigin, destination: validatedDestination, mode: validatedMode } = queryData;
+    const mapsService = new MapsService();
+
+    const routes = await mapsService.getDirections(validatedOrigin, validatedDestination, validatedMode);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        routes,
+        origin: validatedOrigin,
+        destination: validatedDestination,
+        mode: validatedMode,
+        totalRoutes: routes.length,
+      },
+      message: 'Directions retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Error fetching directions:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch directions' },
+      { status: 500 }
+    );
   }
-
-  return withQueryValidation(
-    directionsQuerySchema,
-    async (req, queryData) => {
-      return withAuth(
-        req,
-        async (authReq, token) => {
-          try {
-            const { origin, destination, mode } = queryData;
-            const mapsService = new MapsService();
-
-            const routes = await mapsService.getDirections(origin, destination, mode);
-
-            if (routes.length === 0) {
-              return NextResponse.json(
-                { success: false, error: 'No routes found' },
-                { status: 404 }
-              );
-            }
-
-            return NextResponse.json({
-              success: true,
-              data: {
-                routes,
-                searchParams: {
-                  origin,
-                  destination,
-                  mode,
-                },
-                totalRoutes: routes.length,
-              },
-              message: `Found ${routes.length} route(s) from ${origin} to ${destination}`,
-            });
-          } catch (error) {
-            console.error('Error getting directions:', error);
-            return NextResponse.json(
-              { success: false, error: 'Failed to get directions' },
-              { status: 500 }
-            );
-          }
-        }
-      );
-    }
-  );
 }

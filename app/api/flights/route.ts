@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { withQueryValidation } from '@/lib/middleware/validation';
 import { FlightService } from '@/services/external/flight.service';
 import { z } from 'zod';
 
@@ -19,77 +17,54 @@ const flightSearchSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  return withAuth(
-    request,
-    async (authReq, token) => {
-      try {
-        const url = new URL(request.url);
-        const queryParams = Object.fromEntries(url.searchParams.entries());
-        
-        // Parse and validate query parameters
-        const origin = queryParams.origin;
-        const destination = queryParams.destination;
-        const departureDate = queryParams.departureDate;
-        const returnDate = queryParams.returnDate;
-        const adults = parseInt(queryParams.adults || '1', 10);
-        const children = queryParams.children ? parseInt(queryParams.children, 10) : undefined;
-        const infants = queryParams.infants ? parseInt(queryParams.infants, 10) : undefined;
-        const travelClass = queryParams.travelClass as 'ECONOMY' | 'PREMIUM_ECONOMY' | 'BUSINESS' | 'FIRST' | undefined;
-        const nonStop = queryParams.nonStop === 'true';
-        const maxPrice = queryParams.maxPrice ? parseInt(queryParams.maxPrice, 10) : undefined;
-        const currency = queryParams.currency || 'USD';
+  try {
+    const url = new URL(request.url);
+    const queryParams = Object.fromEntries(url.searchParams.entries());
+    
+    // Parse and validate query parameters
+    const origin = queryParams.origin;
+    const destination = queryParams.destination;
+    const departureDate = queryParams.departureDate;
+    const returnDate = queryParams.returnDate;
+    const adults = queryParams.adults || '1';
+    const children = queryParams.children;
+    const infants = queryParams.infants;
+    const travelClass = queryParams.travelClass;
+    const nonStop = queryParams.nonStop || 'false';
+    const maxPrice = queryParams.maxPrice;
+    const currency = queryParams.currency || 'USD';
 
-        if (!origin || !destination || !departureDate) {
-          return NextResponse.json(
-            { success: false, error: 'Missing required parameters: origin, destination, departureDate' },
-            { status: 400 }
-          );
-        }
+    const searchData = flightSearchSchema.parse({
+      origin,
+      destination,
+      departureDate,
+      returnDate,
+      adults,
+      children,
+      infants,
+      travelClass,
+      nonStop,
+      maxPrice,
+      currency,
+    });
 
-        const flightService = new FlightService();
-        
-        const flightOffers = await flightService.searchFlights({
-          origin,
-          destination,
-          departureDate,
-          returnDate,
-          adults,
-          children,
-          infants,
-          travelClass,
-          nonStop,
-          maxPrice,
-          currency,
-        });
+    const flightService = new FlightService();
+    const flights = await flightService.searchFlights(searchData);
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            offers: flightOffers,
-            searchParams: {
-              origin,
-              destination,
-              departureDate,
-              returnDate,
-              adults,
-              children,
-              infants,
-              travelClass,
-              nonStop,
-              maxPrice,
-              currency,
-            },
-            totalResults: flightOffers.length,
-          },
-          message: `Found ${flightOffers.length} flight offers`,
-        });
-      } catch (error) {
-        console.error('Error searching flights:', error);
-        return NextResponse.json(
-          { success: false, error: 'Failed to search flights' },
-          { status: 500 }
-        );
-      }
-    }
-  );
+    return NextResponse.json({
+      success: true,
+      data: {
+        flights,
+        searchCriteria: searchData,
+        totalFlights: flights.length,
+      },
+      message: 'Flight search completed successfully',
+    });
+  } catch (error) {
+    console.error('Error searching flights:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to search flights' },
+      { status: 500 }
+    );
+  }
 }

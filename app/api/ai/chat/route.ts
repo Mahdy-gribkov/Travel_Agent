@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { secure } from '@/lib/security';
-import { AgentService } from '@/services/ai/agent.service';
+import { AIAgentService } from '@/services/ai/agent.service';
 import { ChatService } from '@/services/chat.service';
 import { UserService } from '@/services/user.service';
 import { aiChatRequestSchema } from '@/lib/validations/schemas';
 
-const agentService = new AgentService();
+const agentService = new AIAgentService();
 const chatService = new ChatService();
 const userService = new UserService();
 

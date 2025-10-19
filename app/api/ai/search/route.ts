@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { withQueryValidation } from '@/lib/middleware/validation';
+import { createSecureHandler, SECURITY_PRESETS } from '@/lib/security/config';
 import { VectorService } from '@/services/ai/vector.service';
 import { z } from 'zod';
 
@@ -13,68 +13,70 @@ const searchQuerySchema = z.object({
   topK: z.string().default('10'),
 });
 
-export async function GET(request: NextRequest) {
-  // Skip during static generation
-  if (process.env.NODE_ENV === 'production' && !request.headers.get('authorization')) {
-    return NextResponse.json({ success: false, error: 'Not available during build' }, { status: 503 });
-  }
+export const GET = createSecureHandler(
+  SECURITY_PRESETS.search,
+  async (request: NextRequest) => {
+    try {
+      const url = new URL(request.url);
+      const query = url.searchParams.get('query');
+      const location = url.searchParams.get('location');
+      const type = url.searchParams.get('type') as any;
+      const topK = url.searchParams.get('topK');
 
-  return withQueryValidation(
-    searchQuerySchema,
-    async (req, queryData) => {
-      return withAuth(
-        req,
-        async (authReq, token) => {
-          try {
-            const { query, location, type, topK } = queryData;
-            const topKNumber = parseInt(topK || '10', 10) || 10;
-            
-            let results;
-            if (location && type) {
-              // Search by location and type
-              results = await vectorService.searchByType(type, query, { topK: topKNumber });
-              results = results.filter(result => 
-                result.metadata.location?.toLowerCase().includes(location.toLowerCase())
-              );
-            } else if (location) {
-              // Search by location
-              results = await vectorService.searchByLocation(location, { topK: topKNumber });
-            } else {
-              // General search
-              results = await vectorService.searchSimilar(query, { 
-                topK: topKNumber,
-                filter: type ? { type: { $eq: type } } : undefined,
-              });
-            }
+      // Validate query parameters
+      const queryData = searchQuerySchema.parse({
+        query,
+        location,
+        type,
+        topK,
+      });
 
-            return NextResponse.json({
-              success: true,
-              data: {
-                query,
-                location,
-                type,
-                results: results.map(result => ({
-                  id: result.id,
-                  title: result.metadata.title,
-                  content: result.content.substring(0, 200) + '...',
-                  type: result.metadata.type,
-                  location: result.metadata.location,
-                  tags: result.metadata.tags,
-                  score: result.metadata.relevance || 0.9,
-                })),
-                total: results.length,
-              },
-              message: 'Search completed successfully',
-            });
-          } catch (error) {
-            console.error('Error searching:', error);
-            return NextResponse.json(
-              { success: false, error: 'Failed to search' },
-              { status: 500 }
-            );
-          }
-        }
+      const { query: validatedQuery, location: validatedLocation, type: validatedType, topK: validatedTopK } = queryData;
+      const topKNumber = parseInt(validatedTopK || '10', 10) || 10;
+      
+      let results;
+      if (validatedLocation && validatedType) {
+        // Search by location and type
+        results = await vectorService.searchByType(validatedType, validatedQuery, { topK: topKNumber });
+        results = results.filter(result => 
+          result.metadata.location?.toLowerCase().includes(validatedLocation.toLowerCase())
+        );
+      } else if (validatedLocation) {
+        // Search by location
+        results = await vectorService.searchByLocation(validatedLocation, { topK: topKNumber });
+      } else {
+        // General search
+        results = await vectorService.searchSimilar(validatedQuery, { 
+          topK: topKNumber,
+          filter: validatedType ? { type: { $eq: validatedType } } : undefined,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          query: validatedQuery,
+          location: validatedLocation,
+          type: validatedType,
+          results: results.map(result => ({
+            id: result.id,
+            title: result.metadata.title,
+            content: result.content.substring(0, 200) + '...',
+            type: result.metadata.type,
+            location: result.metadata.location,
+            tags: result.metadata.tags,
+            score: result.metadata.relevance || 0.9,
+          })),
+          total: results.length,
+        },
+        message: 'Search completed successfully',
+      });
+    } catch (error) {
+      console.error('Error searching:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to search' },
+        { status: 500 }
       );
     }
-  );
-}
+  }
+);

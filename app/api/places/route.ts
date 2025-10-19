@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { withQueryValidation } from '@/lib/middleware/validation';
 import { MapsService } from '@/services/external/maps.service';
 import { z } from 'zod';
 
@@ -14,123 +12,94 @@ const placesQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  return withAuth(
-    request,
-    async (authReq, token) => {
-      try {
-        const url = new URL(request.url);
-        const queryParams = Object.fromEntries(url.searchParams.entries());
-        
-        const query = queryParams.query;
-        const location = queryParams.location;
-        const radius = queryParams.radius ? parseInt(queryParams.radius, 10) : undefined;
-        const type = queryParams.type;
-        const action = queryParams.action || 'search';
-        const placeId = queryParams.placeId;
+  try {
+    const url = new URL(request.url);
+    const queryParams = Object.fromEntries(url.searchParams.entries());
+    
+    const query = queryParams.query;
+    const location = queryParams.location;
+    const radius = queryParams.radius ? parseInt(queryParams.radius, 10) : undefined;
+    const type = queryParams.type;
+    const action = queryParams.action || 'search';
+    const placeId = queryParams.placeId;
 
-        if (!query && action !== 'details') {
+    const searchData = placesQuerySchema.parse({
+      query,
+      location,
+      radius,
+      type,
+      action,
+      placeId,
+    });
+
+    const { query: validatedQuery, location: validatedLocation, radius: validatedRadius, type: validatedType, action: validatedAction, placeId: validatedPlaceId } = searchData;
+    const mapsService = new MapsService();
+
+    let places = [];
+
+    switch (validatedAction) {
+      case 'search':
+        places = await mapsService.searchPlaces(validatedQuery, {
+          location: validatedLocation,
+          radius: validatedRadius,
+          type: validatedType,
+        });
+        break;
+
+      case 'nearby':
+        if (!validatedLocation) {
           return NextResponse.json(
-            { success: false, error: 'Query parameter is required' },
+            { success: false, error: 'Location parameter is required for nearby search' },
             { status: 400 }
           );
         }
+        places = await mapsService.getNearbyPlaces(validatedLocation, {
+          radius: validatedRadius || 5000,
+          type: validatedType,
+        });
+        break;
 
-        // For search actions, ensure we have a query
-        if ((action === 'search' || !action) && !query) {
+      case 'details':
+        if (!validatedPlaceId) {
           return NextResponse.json(
-            { success: false, error: 'Query parameter is required for search' },
+            { success: false, error: 'Place ID is required for details' },
             { status: 400 }
           );
         }
-
-        const mapsService = new MapsService();
-
-        if (action === 'details' && placeId) {
-          const place = await mapsService.getPlaceDetails(placeId);
-          
-          if (!place) {
-            return NextResponse.json(
-              { success: false, error: 'Place not found' },
-              { status: 404 }
-            );
-          }
-
-          return NextResponse.json({
-            success: true,
-            data: place,
-            message: 'Place details retrieved successfully',
-          });
-        }
-
-        if (action === 'nearby' && location) {
-          const coords = location.split(',').map(coord => parseFloat(coord.trim()));
-          const lat = coords[0];
-          const lng = coords[1];
-          
-          if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
-            return NextResponse.json(
-              { success: false, error: 'Invalid location format. Use "lat,lng"' },
-              { status: 400 }
-            );
-          }
-
-          const places = await mapsService.getNearbyPlaces(
-            { lat, lng },
-            radius || 1000,
-            type
-          );
-
-          return NextResponse.json({
-            success: true,
-            data: {
-              places,
-              searchParams: {
-                location: { lat, lng },
-                radius: radius || 1000,
-                type,
-              },
-              totalResults: places.length,
-            },
-            message: `Found ${places.length} nearby places`,
-          });
-        }
-
-        // Default: search places
-        const locationObj = location ? (() => {
-          const coords = location.split(',').map(coord => parseFloat(coord.trim()));
-          const lat = coords[0];
-          const lng = coords[1];
-          return (!lat || !lng || isNaN(lat) || isNaN(lng)) ? undefined : { lat, lng };
-        })() : undefined;
-
-        const places = await mapsService.searchPlaces(
-          query!,
-          locationObj,
-          radius,
-          type
-        );
-
+        const placeDetails = await mapsService.getPlaceDetails(validatedPlaceId);
         return NextResponse.json({
           success: true,
-          data: {
-            places,
-            searchParams: {
-              query,
-              location: locationObj,
-              radius,
-              type,
-            },
-            totalResults: places.length,
-          },
-          message: `Found ${places.length} places for "${query}"`,
+          data: placeDetails,
+          message: 'Place details retrieved successfully',
         });
-      } catch (error) {
-        console.error('Error searching places:', error);
+
+      default:
         return NextResponse.json(
-          { success: false, error: 'Failed to search places' },
-          { status: 500 }
+          { success: false, error: 'Invalid action parameter' },
+          { status: 400 }
         );
-      }
     }
-  );
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        places,
+        searchCriteria: {
+          query: validatedQuery,
+          location: validatedLocation,
+          radius: validatedRadius,
+          type: validatedType,
+          action: validatedAction,
+        },
+        totalPlaces: places.length,
+      },
+      message: 'Places search completed successfully',
+    });
+  } catch (error) {
+    console.error('Error searching places:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to search places' },
+      { status: 500 }
+    );
+  }
 }
