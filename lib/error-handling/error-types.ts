@@ -70,6 +70,7 @@ export interface AppError extends Error {
   stack?: string;
 }
 
+
 export interface ErrorContext {
   userId?: string;
   requestId?: string;
@@ -108,8 +109,8 @@ export class BaseAppError extends Error implements AppError {
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.timestamp = new Date();
-    this.userId = context?.userId;
-    this.requestId = context?.requestId;
+    if (context?.userId) this.userId = context.userId;
+    if (context?.requestId) this.requestId = context.requestId;
     this.context = {
       endpoint: context?.endpoint,
       method: context?.method,

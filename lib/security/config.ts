@@ -4,6 +4,7 @@ import { withRateLimit, RATE_LIMITS, withDDoSProtection, withBruteForceProtectio
 import { withAuditLogging, AuditAction } from './audit';
 import { withRBAC, Permission, UserRole } from './rbac';
 import { withValidation } from '../middleware/validation';
+import { withApiKey, withOptionalApiKey } from '../middleware/api-key';
 import { withAuth } from '../middleware/auth';
 import { z } from 'zod';
 
@@ -12,6 +13,7 @@ export interface SecurityConfig {
   // Authentication & Authorization
   auth?: {
     required: boolean;
+    type?: 'api-key' | 'session';
     roles?: UserRole[];
     permissions?: Permission[];
   };
@@ -89,7 +91,7 @@ export const SECURITY_PRESETS = {
   
   // User API endpoints (standard security)
   user: {
-    auth: { required: true, roles: [UserRole.USER, UserRole.ADMIN] },
+    auth: { required: true, type: 'api-key', roles: [UserRole.USER, UserRole.ADMIN] },
     rateLimit: { enabled: true, config: 'api' },
     ddosProtection: { enabled: true, maxRequestsPerSecond: 5 },
     validation: { enabled: true },
@@ -101,7 +103,7 @@ export const SECURITY_PRESETS = {
   
   // Chat endpoints (enhanced security)
   chat: {
-    auth: { required: true, roles: [UserRole.USER, UserRole.ADMIN] },
+    auth: { required: true, type: 'api-key', roles: [UserRole.USER, UserRole.ADMIN] },
     rateLimit: { enabled: true, config: 'chat' },
     ddosProtection: { enabled: true, maxRequestsPerSecond: 3 },
     validation: { enabled: true },
@@ -126,7 +128,7 @@ export const SECURITY_PRESETS = {
   
   // Admin endpoints (maximum security)
   admin: {
-    auth: { required: true, roles: [UserRole.ADMIN] },
+    auth: { required: true, type: 'api-key', roles: [UserRole.ADMIN] },
     rateLimit: { enabled: true, config: 'admin' },
     ddosProtection: { enabled: true, maxRequestsPerSecond: 5 },
     validation: { enabled: true },
@@ -138,7 +140,7 @@ export const SECURITY_PRESETS = {
   
   // Search endpoints (moderate security)
   search: {
-    auth: { required: true, roles: [UserRole.USER, UserRole.ADMIN] },
+    auth: { required: true, type: 'api-key', roles: [UserRole.USER, UserRole.ADMIN] },
     rateLimit: { enabled: true, config: 'search' },
     ddosProtection: { enabled: true, maxRequestsPerSecond: 8 },
     validation: { enabled: true },
@@ -150,7 +152,7 @@ export const SECURITY_PRESETS = {
   
   // File upload endpoints (strict security)
   upload: {
-    auth: { required: true, roles: [UserRole.USER, UserRole.ADMIN] },
+    auth: { required: true, type: 'api-key', roles: [UserRole.USER, UserRole.ADMIN] },
     rateLimit: { enabled: true, config: 'upload' },
     ddosProtection: { enabled: true, maxRequestsPerSecond: 2 },
     validation: { enabled: true },
@@ -224,6 +226,26 @@ export function createSecureHandler(
   
   // Apply authentication and authorization
   if (securityConfig.auth?.required) {
+    const authType = securityConfig.auth.type || 'api-key';
+    
+    if (authType === 'api-key') {
+      // Apply API key authentication
+      const authMiddleware = (req: NextRequest, context?: any) => {
+        return withApiKey(req, async (authReq, apiKeyContext) => {
+          return middleware(authReq, { ...context, ...apiKeyContext });
+        });
+      };
+      middleware = authMiddleware;
+    } else if (authType === 'session') {
+      // Apply session-based authentication (legacy)
+      const authMiddleware = (req: NextRequest, context?: any) => {
+        return withAuth(req, async (authReq, token) => {
+          return middleware(authReq, { ...context, userId: token.uid });
+        });
+      };
+      middleware = authMiddleware;
+    }
+    
     // Apply RBAC if permissions or roles are specified
     if ((securityConfig.auth as any).permissions && (securityConfig.auth as any).permissions.length > 0) {
       // Use the first permission for RBAC (in a real app, you might want to check all)
@@ -231,14 +253,6 @@ export function createSecureHandler(
     } else if ((securityConfig.auth as any).roles && (securityConfig.auth as any).roles.length > 0) {
       // Apply role-based middleware
       middleware = withRole((securityConfig.auth as any).roles, middleware);
-    } else {
-      // Just require authentication - wrap the middleware
-      const authMiddleware = (req: NextRequest, context?: any) => {
-        return withAuth(req, async (authReq, token) => {
-          return middleware(authReq, { ...context, userId: token.uid });
-        });
-      };
-      middleware = authMiddleware;
     }
   }
   

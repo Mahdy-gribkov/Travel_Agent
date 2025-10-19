@@ -123,12 +123,13 @@ export class HealthChecker {
         },
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         status: 'fail',
-        message: `Database connection failed: ${error.message}`,
+        message: `Database connection failed: ${errorMessage}`,
         responseTime: Date.now() - startTime,
         details: {
-          error: error.message,
+          error: errorMessage,
         },
       };
     }
@@ -154,7 +155,8 @@ export class HealthChecker {
           await new Promise(resolve => setTimeout(resolve, 50));
           return { name: service.name, status: 'healthy' };
         } catch (error) {
-          return { name: service.name, status: 'unhealthy', error: error.message };
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          return { name: service.name, status: 'unhealthy', error: errorMessage };
         }
       })
     );
@@ -327,7 +329,7 @@ export async function handleHealthCheck(req: NextRequest): Promise<NextResponse>
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         error: 'Health check failed',
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 503 }
     );
@@ -358,7 +360,7 @@ export async function handleReadinessCheck(req: NextRequest): Promise<NextRespon
     }
   } catch (error) {
     return NextResponse.json(
-      { status: 'not ready', error: error.message },
+      { status: 'not ready', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 503 }
     );
   }

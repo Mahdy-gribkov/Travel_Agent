@@ -338,7 +338,7 @@ export class ApiTestSuite {
       this.results.push({
         test: name,
         passed: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         duration: Date.now() - start,
       });
     }

@@ -2,7 +2,7 @@
  * High-performance caching system with multiple strategies
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -36,6 +36,27 @@ export class CacheManager {
       CacheManager.instance = new CacheManager();
     }
     return CacheManager.instance;
+  }
+
+  /**
+   * Check if a cache exists
+   */
+  public hasCache(name: string): boolean {
+    return this.caches.has(name);
+  }
+
+  /**
+   * Get a cache by name
+   */
+  public getCache(name: string): Map<string, CacheItem<any>> | undefined {
+    return this.caches.get(name);
+  }
+
+  /**
+   * Get all cache names
+   */
+  public getCacheNames(): string[] {
+    return Array.from(this.caches.keys());
   }
 
   /**
@@ -249,7 +270,7 @@ export function withCaching(
   ) {
     return async (req: NextRequest, context?: any): Promise<NextResponse> => {
       // Create cache if it doesn't exist
-      if (!cacheManager.caches.has(cacheName)) {
+      if (!cacheManager.hasCache(cacheName)) {
         cacheManager.createCache(cacheName, options);
       }
 
@@ -308,7 +329,7 @@ export function cached<T extends any[], R>(
 
     descriptor.value = async function(...args: T): Promise<R> {
       // Create cache if it doesn't exist
-      if (!cacheManager.caches.has(cacheName)) {
+      if (!cacheManager.hasCache(cacheName)) {
         cacheManager.createCache(cacheName, options);
       }
 
@@ -337,7 +358,7 @@ export class CacheInvalidator {
    * Invalidate cache by pattern
    */
   public static invalidateByPattern(cacheName: string, pattern: RegExp): number {
-    const cache = cacheManager.caches.get(cacheName);
+    const cache = cacheManager.getCache(cacheName);
     if (!cache) {
       return 0;
     }
@@ -357,7 +378,7 @@ export class CacheInvalidator {
    * Invalidate all caches
    */
   public static invalidateAll(): void {
-    for (const cacheName of cacheManager.caches.keys()) {
+    for (const cacheName of cacheManager.getCacheNames()) {
       cacheManager.clear(cacheName);
     }
   }
@@ -368,7 +389,7 @@ export class CacheInvalidator {
   public static invalidateUserCaches(userId: string): number {
     let totalInvalidated = 0;
     
-    for (const cacheName of cacheManager.caches.keys()) {
+    for (const cacheName of cacheManager.getCacheNames()) {
       const invalidated = this.invalidateByPattern(cacheName, new RegExp(`user:${userId}`));
       totalInvalidated += invalidated;
     }

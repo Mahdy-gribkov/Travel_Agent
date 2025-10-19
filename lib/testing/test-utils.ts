@@ -2,11 +2,10 @@
  * Testing utilities and helpers
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { render, RenderOptions } from '@testing-library/react';
-import { ReactElement } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
+import React, { ReactElement } from 'react';
+// Removed NextAuth import - no longer needed
 
 // Mock data generators
 export const mockUser = {
@@ -222,52 +221,29 @@ export function createMockRequest(
       'Content-Type': 'application/json',
       ...headers,
     },
-    body: body ? JSON.stringify(body) : undefined,
+    ...(body && { body: JSON.stringify(body) }),
   });
   
   return request;
 }
 
-export function createMockResponse(data: any, status: number = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+export function createMockResponse(data: any, status: number = 200): NextResponse {
+  return NextResponse.json(data, { status });
 }
 
 // React Testing Library utilities
-const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <SessionProvider session={mockUser}>
-        {children}
-      </SessionProvider>
-    </QueryClientProvider>
-  );
-};
-
 export const customRender = (
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options });
+) => render(ui, options);
 
-// Mock functions
-export const mockFetch = jest.fn();
+// Mock functions (for testing only)
+export const mockFetch = async () => new Response('{}', { status: 200 });
 export const mockConsole = {
-  log: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  info: jest.fn(),
+  log: () => {},
+  error: () => {},
+  warn: () => {},
+  info: () => {},
 };
 
 // Test data factories
@@ -324,19 +300,19 @@ export async function waitForElement(selector: string, timeout: number = 5000): 
   throw new Error(`Element ${selector} not found within ${timeout}ms`);
 }
 
-// Mock external services
+// Mock external services (for testing only)
 export const mockExternalServices = {
   weather: {
-    getCurrentWeather: jest.fn().mockResolvedValue(mockWeatherResponse.data.current),
-    getWeatherForecast: jest.fn().mockResolvedValue(mockWeatherResponse.data.forecast),
+    getCurrentWeather: () => Promise.resolve(mockWeatherResponse.data.current),
+    getWeatherForecast: () => Promise.resolve(mockWeatherResponse.data.forecast),
   },
   flights: {
-    searchFlights: jest.fn().mockResolvedValue(mockFlightResponse.data.offers),
+    searchFlights: () => Promise.resolve(mockFlightResponse.data.offers),
   },
   maps: {
-    searchPlaces: jest.fn().mockResolvedValue(mockPlacesResponse.data.places),
-    getPlaceDetails: jest.fn().mockResolvedValue(mockPlacesResponse.data.places[0]),
-    getDirections: jest.fn().mockResolvedValue({
+    searchPlaces: () => Promise.resolve(mockPlacesResponse.data.places),
+    getPlaceDetails: () => Promise.resolve(mockPlacesResponse.data.places[0]),
+    getDirections: () => Promise.resolve({
       routes: [{
         distance: '2.5 km',
         duration: '15 minutes',
@@ -345,11 +321,11 @@ export const mockExternalServices = {
     }),
   },
   countries: {
-    getAllCountries: jest.fn().mockResolvedValue([
+    getAllCountries: () => Promise.resolve([
       { name: 'France', code: 'FR', capital: 'Paris' },
       { name: 'Italy', code: 'IT', capital: 'Rome' },
     ]),
-    getCountryByName: jest.fn().mockResolvedValue({
+    getCountryByName: () => Promise.resolve({
       name: 'France',
       code: 'FR',
       capital: 'Paris',
@@ -367,38 +343,17 @@ export function setupTestEnvironment(): void {
   // Mock console methods
   global.console = { ...console, ...mockConsole };
   
-  // Set test environment variables
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'test-secret';
-  process.env.NEXTAUTH_URL = 'http://localhost:3000';
+  // Set test environment variables (would be handled by Jest in actual tests)
+  // process.env.NODE_ENV = 'test';
+  // process.env.APP_API_KEY = 'test-api-key';
   
-  // Mock Next.js router
-  jest.mock('next/router', () => ({
-    useRouter: () => ({
-      route: '/',
-      pathname: '/',
-      query: {},
-      asPath: '/',
-      push: jest.fn(),
-      pop: jest.fn(),
-      reload: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn(),
-      beforePopState: jest.fn(),
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
-      },
-    }),
-  }));
+  // Mock Next.js router (for testing only)
+  // This would be handled by Jest mocks in actual test files
 }
 
 // Cleanup utilities
 export function cleanupTestEnvironment(): void {
-  jest.clearAllMocks();
-  jest.resetAllMocks();
-  jest.restoreAllMocks();
+  // This would be handled by Jest in actual test files
 }
 
 // Performance testing utilities

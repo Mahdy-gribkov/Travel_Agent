@@ -218,7 +218,7 @@ export function withPerformanceOptimization(
       // Record error metrics
       recordCustomMetric('error_count', 1, {
         endpoint: req.nextUrl.pathname,
-        error_type: error.constructor.name,
+        error_type: error instanceof Error ? error.constructor.name : 'UnknownError',
       });
       
       throw error;

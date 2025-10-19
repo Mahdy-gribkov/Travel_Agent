@@ -18,6 +18,7 @@ export interface PerformanceMetrics {
   cpuUsage?: number;
   requestSize: number;
   responseSize: number;
+  timestamp: Date;
 }
 
 export interface BusinessMetrics {
@@ -58,8 +59,8 @@ export class MetricsCollector {
       name,
       value,
       timestamp: new Date(),
-      tags,
-      metadata,
+      ...(tags && { tags }),
+      ...(metadata && { metadata }),
     };
 
     if (!this.metrics.has(name)) {
@@ -80,13 +81,18 @@ export class MetricsCollector {
    */
   public recordPerformance(
     endpoint: string,
-    metrics: PerformanceMetrics
+    metrics: Omit<PerformanceMetrics, 'timestamp'>
   ): void {
     if (!this.performanceData.has(endpoint)) {
       this.performanceData.set(endpoint, []);
     }
     
-    this.performanceData.get(endpoint)!.push(metrics);
+    const performanceData: PerformanceMetrics = {
+      ...metrics,
+      timestamp: new Date(),
+    };
+    
+    this.performanceData.get(endpoint)!.push(performanceData);
     
     // Keep only last 100 performance records per endpoint
     const perfData = this.performanceData.get(endpoint)!;
@@ -154,7 +160,7 @@ export class MetricsCollector {
           avg: values.reduce((a, b) => a + b, 0) / values.length,
           min: Math.min(...values),
           max: Math.max(...values),
-          latest: metrics[metrics.length - 1].value,
+          latest: metrics[metrics.length - 1]?.value || 0,
         };
       }
     }
@@ -270,7 +276,7 @@ export function withMetrics(
       const endMemory = process.memoryUsage();
       const responseTime = endTime - startTime;
       
-      const performanceMetrics: PerformanceMetrics = {
+      const performanceMetrics = {
         responseTime,
         memoryUsage: endMemory.heapUsed - startMemory.heapUsed,
         requestSize: parseInt(req.headers.get('content-length') || '0'),
@@ -294,12 +300,13 @@ export function withMetrics(
       return response;
     } catch (error) {
       // Increment error counter
-      metricsCollector.incrementError(endpoint, error.constructor.name);
+      const errorName = error instanceof Error ? error.constructor.name : 'UnknownError';
+      metricsCollector.incrementError(endpoint, errorName);
       
       // Record error metrics
       metricsCollector.recordMetric('error_count', 1, {
         endpoint,
-        error_type: error.constructor.name,
+        error_type: errorName,
       });
       
       throw error;

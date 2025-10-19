@@ -3,7 +3,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AppError, ErrorCode, ErrorSeverity, ErrorContext } from './error-types';
+import { 
+  AppError, 
+  BaseAppError, 
+  ErrorCode, 
+  ErrorSeverity, 
+  ErrorContext,
+  ValidationError,
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ExternalServiceError,
+  RateLimitError,
+  DatabaseError,
+  InternalServerError,
+  SecurityError
+} from './error-types';
 import { logAuditEvent, AuditAction } from '@/lib/security/audit';
 import winston from 'winston';
 
@@ -82,7 +97,7 @@ export class ErrorHandler {
    * Normalize any error to AppError format
    */
   private normalizeError(error: Error | AppError, context?: ErrorContext): AppError {
-    if (error instanceof AppError) {
+    if (error instanceof BaseAppError) {
       return error;
     }
 
@@ -161,14 +176,14 @@ export class ErrorHandler {
     // Log to audit system for security-related errors
     if (error.code.includes('AUTH_') || error.code.includes('SECURITY_')) {
       await logAuditEvent(
-        AuditAction.SECURITY_ALERT,
+        AuditAction.SUSPICIOUS_ACTIVITY,
         request || new NextRequest('http://localhost'),
         {
-          userId: error.userId,
+          ...(error.userId && { userId: error.userId }),
           error: error.message,
-          severity: error.severity,
           metadata: {
             errorCode: error.code,
+            severity: error.severity,
             context: error.context,
           },
         }
@@ -221,7 +236,7 @@ export class ErrorHandler {
   /**
    * Create appropriate HTTP response for error
    */
-  private createErrorResponse(error: AppError): NextResponse {
+  public createErrorResponse(error: AppError): NextResponse {
     const responseData = {
       success: false,
       error: {
@@ -303,9 +318,20 @@ export function createErrorResponse(
   statusCode: number = 500,
   context?: ErrorContext
 ): NextResponse {
-  const error = new InternalServerError(message, context);
-  error.code = code;
-  error.statusCode = statusCode;
+  // Create the appropriate error type based on the code
+  let error: BaseAppError;
+  
+  if (code.includes('AUTH_')) {
+    error = new AuthenticationError(message, context);
+  } else if (code.includes('VALIDATION_')) {
+    error = new ValidationError(message, context);
+  } else if (code.includes('DB_')) {
+    error = new DatabaseError(message, context);
+  } else if (code.includes('API_')) {
+    error = new ExternalServiceError('API', message, context);
+  } else {
+    error = new InternalServerError(message, context);
+  }
   
   return errorHandler.createErrorResponse(error);
 }
