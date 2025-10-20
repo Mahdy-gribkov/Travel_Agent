@@ -1,4 +1,12 @@
 {
+  "header": {
+    "tagline": "Your AI-powered travel companion"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "itineraries": "Itineraries",
+    "chat": "Chat"
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",

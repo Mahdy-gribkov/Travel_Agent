@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ItineraryService } from '@/services/itinerary.service';
+import { MockItineraryService } from '@/services/mock-itinerary.service';
 import { createItinerarySchema } from '@/lib/validations/schemas';
 import { itineraryQuerySchema } from '@/lib/validations/schemas';
 
-const itineraryService = new ItineraryService();
+// Use mock service if Firebase is not configured
+const useMockService = !process.env.FIREBASE_PROJECT_ID;
+const itineraryService = useMockService ? new MockItineraryService() : new ItineraryService();
 
 export async function GET(request: NextRequest) {
   try {
