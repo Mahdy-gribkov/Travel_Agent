@@ -83,27 +83,19 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
 
           {/* Right side controls */}
         <div className="flex items-center space-x-4">
-            {/* Language Selector */}
+            {/* Language Selector - English Only */}
             <div className="relative">
-              <select
-                className="
-                  bg-transparent border border-neutral-300 dark:border-neutral-600
-                  rounded-lg px-3 py-2 text-sm
-                  text-text-primary
-                  focus:outline-none focus:ring-2 focus:ring-primary-500
-                  transition-colors duration-200
-                "
-                defaultValue="en"
-                onChange={(e) => {
-                  // Language switching logic would go here
-                  console.log('Language changed to:', e.target.value);
-                }}
-                aria-label="Select language"
-              >
-                <option value="en">English</option>
-                <option value="he">עברית</option>
-                <option value="ar">العربية</option>
-              </select>
+              <div className="
+                bg-transparent border border-neutral-300 dark:border-neutral-600
+                rounded-lg px-3 py-2 text-sm
+                text-text-primary
+                flex items-center space-x-2
+              ">
+                <span>English</span>
+                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
 
             {/* Theme Toggle */}
