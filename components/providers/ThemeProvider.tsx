@@ -48,7 +48,7 @@ export function ThemeProvider({
 
   // Prevent hydration mismatch
   if (!mounted) {
-    return <div className="min-h-screen bg-background-primary">{children}</div>;
+    return <div className="min-h-screen bg-white dark:bg-gray-900">{children}</div>;
   }
 
   const contextValue: ThemeContextType = {
@@ -65,7 +65,7 @@ export function ThemeProvider({
 
   return (
     <ThemeContext.Provider value={contextValue}>
-      <div className="min-h-screen bg-background-primary text-text-primary transition-colors duration-300">
+      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
         {children}
       </div>
     </ThemeContext.Provider>
@@ -93,7 +93,7 @@ export function ThemeToggle({
 
   if (!mounted) {
     return (
-      <div className={`btn btn-secondary ${className}`}>
+      <div className={`bg-gray-100 text-gray-900 hover:bg-gray-200 rounded-lg px-3 py-2 ${className}`}>
         <div className="w-4 h-4" />
         {showLabel && <span className="ml-2">Theme</span>}
       </div>
@@ -187,10 +187,10 @@ export function ThemeToggle({
     <button
       onClick={cycleTheme}
       className={`
-        btn btn-secondary ${sizeClasses[size]} ${className}
+        bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700
+        ${sizeClasses[size]} ${className}
         flex items-center justify-center
-        hover:bg-neutral-200 dark:hover:bg-neutral-700
-        focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
         transition-all duration-200
       `}
       aria-label={`Switch to ${isLight ? 'dark' : isDark ? 'system' : 'light'} theme`}
@@ -221,7 +221,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
 
   if (!mounted) {
     return (
-      <select className={`input ${className}`} disabled>
+      <select className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ${className}`} disabled>
         <option>Loading...</option>
       </select>
     );
@@ -231,7 +231,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
     <select
       value={theme}
       onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-      className={`input ${className}`}
+      className={`flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ${className}`}
       aria-label="Select theme"
     >
       <option value="light">Light</option>

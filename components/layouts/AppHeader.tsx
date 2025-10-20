@@ -16,7 +16,7 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
   return (
     <header
       className={`
-        bg-background-primary border-b border-neutral-200 dark:border-neutral-700
+        bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700
         sticky top-0 z-50 backdrop-blur-sm bg-opacity-95
         ${className}
       `}
@@ -24,9 +24,9 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and Title */}
-        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -49,50 +49,50 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-text-primary">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   vAI Travel Agent
                 </h1>
-                <p className="text-sm text-text-secondary">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {t('header.tagline', 'Your AI-powered travel companion')}
                 </p>
               </div>
             </div>
-        </div>
+          </div>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <a
               href="/dashboard"
-              className="text-text-secondary hover:text-text-primary transition-colors duration-200 font-medium"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium"
             >
               {t('nav.dashboard', 'Dashboard')}
             </a>
             <a
               href="/itineraries"
-              className="text-text-secondary hover:text-text-primary transition-colors duration-200 font-medium"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium"
             >
               {t('nav.itineraries', 'Itineraries')}
             </a>
             <a
               href="/chat"
-              className="text-text-secondary hover:text-text-primary transition-colors duration-200 font-medium"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium"
             >
               {t('nav.chat', 'Chat')}
             </a>
           </nav>
 
           {/* Right side controls */}
-        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
             {/* Language Selector - English Only */}
             <div className="relative">
               <div className="
-                bg-transparent border border-neutral-300 dark:border-neutral-600
+                bg-transparent border border-gray-300 dark:border-gray-600
                 rounded-lg px-3 py-2 text-sm
-                text-text-primary
+                text-gray-900 dark:text-white
                 flex items-center space-x-2
               ">
                 <span>English</span>
-                <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -106,14 +106,14 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
               <button
                 className="
                   flex items-center space-x-2 p-2 rounded-lg
-                  hover:bg-neutral-100 dark:hover:bg-neutral-800
+                  hover:bg-gray-100 dark:hover:bg-gray-800
                   transition-colors duration-200
                 "
                 aria-label="User menu"
               >
-                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                   <svg
-                    className="w-5 h-5 text-primary-600 dark:text-primary-400"
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -128,7 +128,7 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
                   </svg>
                 </div>
                 <svg
-                  className="w-4 h-4 text-text-secondary"
+                  className="w-4 h-4 text-gray-600 dark:text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -145,26 +145,26 @@ export function AppHeader({ className = '' }: AppHeaderProps) {
             </div>
           </div>
         </div>
-                </div>
+      </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-neutral-200 dark:border-neutral-700">
+      <div className="md:hidden border-t border-gray-200 dark:border-gray-700">
         <div className="px-4 py-2 space-y-1">
           <a
             href="/dashboard"
-            className="block px-3 py-2 text-text-secondary hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+            className="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
           >
             {t('nav.dashboard', 'Dashboard')}
           </a>
           <a
             href="/itineraries"
-            className="block px-3 py-2 text-text-secondary hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+            className="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
           >
             {t('nav.itineraries', 'Itineraries')}
           </a>
           <a
             href="/chat"
-            className="block px-3 py-2 text-text-secondary hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors duration-200"
+            className="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
           >
             {t('nav.chat', 'Chat')}
           </a>

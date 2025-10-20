@@ -33,7 +33,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
       <nav className="flex flex-col h-full p-4 space-y-2">
         <div className="space-y-1">
           {navigation.map((item) => {
@@ -44,7 +44,7 @@ export function AppSidebar() {
                   variant={isActive ? 'secondary' : 'ghost'}
                   className={cn(
                     'w-full justify-start',
-                    isActive && 'bg-secondary text-secondary-foreground'
+                    isActive && 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white'
                   )}
                 >
                   <item.icon className="mr-2 h-4 w-4" />
@@ -64,7 +64,7 @@ export function AppSidebar() {
                   variant={isActive ? 'secondary' : 'ghost'}
                   className={cn(
                     'w-full justify-start',
-                    isActive && 'bg-secondary text-secondary-foreground'
+                    isActive && 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white'
                   )}
                 >
                   <item.icon className="mr-2 h-4 w-4" />
