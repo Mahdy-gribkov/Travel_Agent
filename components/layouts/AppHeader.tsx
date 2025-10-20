@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useTheme } from '@/components/providers/ThemeProvider';
+import { useTheme as useNextTheme } from 'next-themes';
 import { ThemeToggle } from '@/components/providers/ThemeProvider';
 import { useTranslation } from 'react-i18next';
 
@@ -11,7 +11,8 @@ interface AppHeaderProps {
 
 export function AppHeader({ className = '' }: AppHeaderProps) {
   const { t } = useTranslation();
-  const { isDark } = useTheme();
+  const { resolvedTheme } = useNextTheme();
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <header

@@ -84,7 +84,10 @@ export function ThemeToggle({
   showLabel = true, 
   size = 'md' 
 }: ThemeToggleProps) {
-  const { theme, setTheme, isDark, isLight, isSystem } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useNextTheme();
+  const isDark = resolvedTheme === 'dark';
+  const isLight = resolvedTheme === 'light';
+  const isSystem = theme === 'system';
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -212,7 +215,10 @@ interface ThemeSelectorProps {
 }
 
 export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
-  const { theme, setTheme, isDark, isLight, isSystem } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useNextTheme();
+  const isDark = resolvedTheme === 'dark';
+  const isLight = resolvedTheme === 'light';
+  const isSystem = theme === 'system';
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
