@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useTheme } from '@/components/providers/ThemeProvider';
+import { useTheme as useNextTheme } from 'next-themes';
 import { designTokens } from '@/lib/design-tokens';
 
 interface Message {
@@ -42,7 +42,8 @@ export function ChatInterface({
   const [isComposing, setIsComposing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { isDark } = useTheme();
+  const { resolvedTheme } = useNextTheme();
+  const isDark = resolvedTheme === 'dark';
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

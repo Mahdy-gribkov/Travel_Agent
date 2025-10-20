@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTheme } from '@/components/providers/ThemeProvider';
+import { useTheme as useNextTheme } from 'next-themes';
 import { designTokens } from '@/lib/design-tokens';
 
 interface ItineraryDay {
@@ -51,7 +51,8 @@ export function ItineraryCard({
   compact = false,
 }: ItineraryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { isDark } = useTheme();
+  const { resolvedTheme } = useNextTheme();
+  const isDark = resolvedTheme === 'dark';
 
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('en-US', {

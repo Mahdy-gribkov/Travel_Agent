@@ -1,27 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme as useNextTheme } from 'next-themes';
-
-interface ThemeContextType {
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
-  resolvedTheme: 'light' | 'dark';
-  systemTheme: 'light' | 'dark';
-  isDark: boolean;
-  isLight: boolean;
-  isSystem: boolean;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-}
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -38,8 +18,6 @@ export function ThemeProvider({
   enableSystem = true,
   disableTransitionOnChange = true,
 }: ThemeProviderProps) {
-  const { theme, setTheme, resolvedTheme, systemTheme } = useNextTheme();
-  
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -51,24 +29,10 @@ export function ThemeProvider({
     return <div className="min-h-screen bg-white dark:bg-gray-900">{children}</div>;
   }
 
-  const contextValue: ThemeContextType = {
-    theme: (theme as 'light' | 'dark' | 'system') || defaultTheme,
-    setTheme: (newTheme: 'light' | 'dark' | 'system') => {
-      setTheme(newTheme);
-    },
-    resolvedTheme: resolvedTheme as 'light' | 'dark',
-    systemTheme: systemTheme as 'light' | 'dark',
-    isDark: resolvedTheme === 'dark',
-    isLight: resolvedTheme === 'light',
-    isSystem: theme === 'system',
-  };
-
   return (
-    <ThemeContext.Provider value={contextValue}>
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
-        {children}
-      </div>
-    </ThemeContext.Provider>
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+      {children}
+    </div>
   );
 }
 
